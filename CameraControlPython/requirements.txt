@@ -1,0 +1,10 @@
+# Canon Camera Control - Python Requirements
+
+# GUI Framework
+PyQt6>=6.4.0
+
+# For image processing (optional, for additional features)
+# Pillow>=9.0.0
+
+# For development
+# pyinstaller>=5.0  # For creating standalone executables
