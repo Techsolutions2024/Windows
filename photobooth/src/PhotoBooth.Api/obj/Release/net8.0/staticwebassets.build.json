@@ -1,0 +1,39 @@
+{
+  "Version": 1,
+  "Hash": "yxnm/cnseZV+yaq026DcgxGdqkI7Cg/eZ8ZLRRgzzvs=",
+  "Source": "PhotoBooth.Api",
+  "BasePath": "_content/PhotoBooth.Api",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "PhotoBooth.Api/wwwroot",
+      "Source": "PhotoBooth.Api",
+      "ContentRoot": "/vercel/sandbox/photobooth/src/PhotoBooth.Api/wwwroot/",
+      "BasePath": "_content/PhotoBooth.Api",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [
+    {
+      "Identity": "/vercel/sandbox/photobooth/src/PhotoBooth.Api/wwwroot/index.html",
+      "SourceId": "PhotoBooth.Api",
+      "SourceType": "Discovered",
+      "ContentRoot": "/vercel/sandbox/photobooth/src/PhotoBooth.Api/wwwroot/",
+      "BasePath": "_content/PhotoBooth.Api",
+      "RelativePath": "index.html",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/index.html"
+    }
+  ]
+}
