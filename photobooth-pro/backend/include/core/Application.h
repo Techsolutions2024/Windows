@@ -23,6 +23,7 @@ public:
     HTTPServer* getHTTPServer() { return httpServer_.get(); }
     WebSocketServer* getWebSocketServer() { return wsServer_.get(); }
     DatabaseManager* getDatabaseManager() { return dbManager_.get(); }
+    DatabaseManager& getDatabase() { return *dbManager_; }
 
 private:
     std::unique_ptr<CameraManager> cameraManager_;
