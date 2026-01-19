@@ -5,7 +5,6 @@
 #include <sqlite3.h>
 #include <sstream>
 
-
 namespace photobooth {
 
 DatabaseManager::DatabaseManager(const std::string &dbPath)
@@ -47,18 +46,25 @@ void DatabaseManager::close() {
 }
 
 bool DatabaseManager::createTables() {
-  CREATE TABLE IF NOT EXISTS events(
-      id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, location TEXT,
-      event_date TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
-      photo_count INTEGER DEFAULT 0, thumbnail_path TEXT,
-      status TEXT DEFAULT 'active');
+  const char *eventsSql = R"(
+        CREATE TABLE IF NOT EXISTS events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            location TEXT,
+            event_date TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            photo_count INTEGER DEFAULT 0,
+            thumbnail_path TEXT,
+            status TEXT DEFAULT 'active'
+        );
     )";
 
-    // Lazy migration for existing tables
-    executeSQL("ALTER TABLE events ADD COLUMN location TEXT;");
-    executeSQL("ALTER TABLE events ADD COLUMN event_date TEXT;");
+  // Lazy migration for existing tables
+  executeSQL("ALTER TABLE events ADD COLUMN location TEXT;");
+  executeSQL("ALTER TABLE events ADD COLUMN event_date TEXT;");
 
-    const char *eventConfigSql = R"(
+  const char *eventConfigSql = R"(
         CREATE TABLE IF NOT EXISTS event_configs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             event_id INTEGER NOT NULL UNIQUE,
@@ -80,7 +86,7 @@ bool DatabaseManager::createTables() {
         );
     )";
 
-    const char *photosSql = R"(
+  const char *photosSql = R"(
         CREATE TABLE IF NOT EXISTS photos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             event_id INTEGER NOT NULL,
@@ -98,22 +104,22 @@ bool DatabaseManager::createTables() {
         );
     )";
 
-    const char *indexSql = R"(
+  const char *indexSql = R"(
         CREATE INDEX IF NOT EXISTS idx_photos_event_id ON photos(event_id);
         CREATE INDEX IF NOT EXISTS idx_events_status ON events(status);
         CREATE INDEX IF NOT EXISTS idx_events_created_at ON events(created_at);
     )";
 
-    if (!executeSQL(eventsSql))
-      return false;
-    if (!executeSQL(eventConfigSql))
-      return false;
-    if (!executeSQL(photosSql))
-      return false;
-    if (!executeSQL(indexSql))
-      return false;
+  if (!executeSQL(eventsSql))
+    return false;
+  if (!executeSQL(eventConfigSql))
+    return false;
+  if (!executeSQL(photosSql))
+    return false;
+  if (!executeSQL(indexSql))
+    return false;
 
-    return true;
+  return true;
 }
 
 bool DatabaseManager::executeSQL(const std::string &sql) {
