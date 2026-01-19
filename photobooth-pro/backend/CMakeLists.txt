@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(PhotoboothPro VERSION 1.0.0 LANGUAGES CXX)
+project(PhotoboothPro VERSION 1.0.0 LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -11,8 +11,10 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # Canon EDSDK paths
 set(EDSDK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../EDSDK_64")
-set(EDSDK_INCLUDE_DIR "${EDSDK_ROOT}/Header")
+set(EDSDK_HEADER_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../EDSDK")
+set(EDSDK_INCLUDE_DIR "${EDSDK_HEADER_ROOT}/Header")
 set(EDSDK_LIB_DIR "${EDSDK_ROOT}/Library")
+set(EDSDK_DLL_DIR "${EDSDK_ROOT}/Dll")
 
 # SQLite paths (download from https://www.sqlite.org/download.html)
 set(SQLITE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/sqlite")
@@ -45,14 +47,9 @@ set(SOURCES
     src/main.cpp
     src/core/Application.cpp
     src/camera/CameraManager.cpp
-    src/camera/CanonCamera.cpp
-    src/camera/WebcamCamera.cpp
     src/api/HTTPServer.cpp
     src/api/WebSocketServer.cpp
-    src/image/ImageProcessor.cpp
     src/storage/DatabaseManager.cpp
-    src/storage/FileManager.cpp
-    src/print/PrintManager.cpp
 )
 
 # Create executable
@@ -79,15 +76,15 @@ endif()
 # Copy EDSDK DLL to output directory
 add_custom_command(TARGET photobooth-server POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    "${EDSDK_LIB_DIR}/EDSDK.dll"
+    "${EDSDK_DLL_DIR}/EDSDK.dll"
     $<TARGET_FILE_DIR:photobooth-server>
 )
 
 # Copy EdsImage.dll if exists
-if(EXISTS "${EDSDK_LIB_DIR}/EdsImage.dll")
+if(EXISTS "${EDSDK_DLL_DIR}/EdsImage.dll")
     add_custom_command(TARGET photobooth-server POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${EDSDK_LIB_DIR}/EdsImage.dll"
+        "${EDSDK_DLL_DIR}/EdsImage.dll"
         $<TARGET_FILE_DIR:photobooth-server>
     )
 endif()

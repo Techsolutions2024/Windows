@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 interface ModeButtonProps {
   icon: string;
@@ -28,11 +28,16 @@ const ModeButton = ({ icon, label, onClick }: ModeButtonProps) => (
 export default function ModeSelectionPage() {
   const navigate = useNavigate();
 
+  const [searchParams] = useSearchParams();
+  const eventId = searchParams.get('eventId');
+
+  const getPath = (mode: string) => `/capture?mode=${mode}${eventId ? `&eventId=${eventId}` : ''}`;
+
   const modes = [
-    { icon: 'photo_camera', label: 'Print', path: '/capture?mode=photo' },
-    { icon: 'collections', label: 'GIF', path: '/capture?mode=gif' },
-    { icon: 'all_inclusive', label: 'Boomerang', path: '/capture?mode=boomerang' },
-    { icon: 'videocam', label: 'Video', path: '/capture?mode=video' },
+    { icon: 'photo_camera', label: 'Print', path: getPath('photo') },
+    { icon: 'collections', label: 'GIF', path: getPath('gif') },
+    { icon: 'all_inclusive', label: 'Boomerang', path: getPath('boomerang') },
+    { icon: 'videocam', label: 'Video', path: getPath('video') },
   ];
 
   return (

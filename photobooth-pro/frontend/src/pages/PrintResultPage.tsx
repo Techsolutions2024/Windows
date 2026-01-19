@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import QRCodeModal from '../components/QRCodeModal';
 
 interface Photo {
@@ -10,6 +10,8 @@ interface Photo {
 
 export default function PrintResultPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const eventId = searchParams.get('eventId');
   const [showQRModal, setShowQRModal] = useState(false);
 
   // Mock photos - replace with actual data
@@ -98,7 +100,7 @@ export default function PrintResultPage() {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => navigate('/capture')}
+              onClick={() => navigate(`/capture${eventId ? `?eventId=${eventId}` : ''}`)}
               className="flex items-center justify-center gap-2 rounded-xl h-14 px-8 bg-white/10 hover:bg-white/20 border border-white/10 text-lg font-bold transition-all flex-1"
             >
               <span className="material-symbols-outlined">refresh</span>
@@ -108,7 +110,7 @@ export default function PrintResultPage() {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => navigate('/mode-selection')}
+              onClick={() => navigate(`/mode-selection${eventId ? `?eventId=${eventId}` : ''}`)}
               className="flex items-center justify-center gap-2 rounded-xl h-14 px-8 bg-white/5 hover:bg-white/10 text-white/70 text-lg font-bold transition-all flex-1"
             >
               <span className="material-symbols-outlined">check_circle</span>
@@ -204,7 +206,7 @@ export default function PrintResultPage() {
 
       {/* Kiosk ID */}
       <div className="absolute bottom-6 left-6 text-white/30 text-xs font-medium uppercase tracking-[0.2em] pointer-events-none">
-        Kiosk ID: BOOTH-04 // Session #8429
+        Kiosk ID: BOOTH-04 // Session #{eventId || 8429}
       </div>
 
       {/* QR Code Modal */}

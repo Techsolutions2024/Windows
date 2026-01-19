@@ -13,6 +13,8 @@ interface ApiResponse<T> {
 export interface Event {
   id: number;
   name: string;
+  location?: string;
+  eventDate?: string;
   createdAt: string;
   updatedAt: string;
   photoCount: number;
@@ -60,7 +62,7 @@ class ApiService {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     const url = `${API_BASE_URL}${endpoint}`;
-    
+
     const defaultHeaders: HeadersInit = {
       'Content-Type': 'application/json',
     };
@@ -96,15 +98,15 @@ class ApiService {
     if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
     if (params?.order) queryParams.append('order', params.order);
     if (params?.filter) queryParams.append('filter', params.filter);
-    
+
     const query = queryParams.toString();
     return this.request<Event[]>(`/api/events${query ? `?${query}` : ''}`);
   }
 
-  async createEvent(name: string): Promise<ApiResponse<Event>> {
+  async createEvent(name: string, location?: string, eventDate?: string): Promise<ApiResponse<Event>> {
     return this.request<Event>('/api/events', {
       method: 'POST',
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, location, eventDate }),
     });
   }
 
@@ -112,10 +114,10 @@ class ApiService {
     return this.request<Event>(`/api/events/${id}`);
   }
 
-  async updateEvent(id: number, name: string): Promise<ApiResponse<Event>> {
+  async updateEvent(id: number, name: string, location?: string, eventDate?: string): Promise<ApiResponse<Event>> {
     return this.request<Event>(`/api/events/${id}`, {
       method: 'PUT',
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, location, eventDate }),
     });
   }
 
@@ -159,7 +161,7 @@ class ApiService {
     const queryParams = new URLSearchParams();
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.offset) queryParams.append('offset', params.offset.toString());
-    
+
     const query = queryParams.toString();
     return this.request<Photo[]>(`/api/gallery/${eventId}${query ? `?${query}` : ''}`);
   }
