@@ -86,7 +86,7 @@ export default function EventsPage() {
     if (!newName || newName === selectedEvent.name) return;
 
     try {
-      const response = await api.updateEvent(selectedEvent.id, newName);
+      const response = await api.updateEvent(selectedEvent.id, newName, selectedEvent.location, selectedEvent.eventDate);
       if (response.success) {
         fetchEvents();
       } else {
