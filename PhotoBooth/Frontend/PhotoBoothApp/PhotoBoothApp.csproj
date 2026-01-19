@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>Resources\icon.ico</ApplicationIcon>
+    <AssemblyName>PhotoBoothPro</AssemblyName>
+    <RootNamespace>PhotoBooth</RootNamespace>
+    <Version>1.0.0</Version>
+    <Authors>PhotoBooth Pro</Authors>
+    <Company>PhotoBooth Pro</Company>
+    <Product>PhotoBooth Pro - Event Photobooth Software</Product>
+    <Description>Professional photobooth software for events using Canon DSLR cameras</Description>
+    <Copyright>Copyright © 2025</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="QRCoder" Version="1.4.3" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Resources\Templates\" />
+    <Folder Include="Resources\Sounds\" />
+    <Folder Include="Resources\Images\" />
+  </ItemGroup>
+
+</Project>

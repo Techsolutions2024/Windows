@@ -1,0 +1,377 @@
+<Window x:Class="PhotoBooth.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="PhotoBooth Pro - Operator Control" 
+        Height="900" Width="1400"
+        WindowStartupLocation="CenterScreen"
+        Background="#1E1E1E">
+    
+    <Window.Resources>
+        <Style TargetType="Button" x:Key="ModernButton">
+            <Setter Property="Background" Value="#007ACC"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="20,10"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                CornerRadius="5"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" 
+                                            VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#1E90FF"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#005A9E"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="60"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="50"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top Menu Bar -->
+        <Border Grid.Row="0" Background="#2D2D30" BorderBrush="#3E3E42" BorderThickness="0,0,0,1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="20,0">
+                    <TextBlock Text="📷" FontSize="28" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <TextBlock Text="PhotoBooth Pro" 
+                             FontSize="20" 
+                             FontWeight="Bold" 
+                             Foreground="White" 
+                             VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="20,0">
+                    <Button Content="Connect Camera" 
+                          Style="{StaticResource ModernButton}"
+                          Command="{Binding ConnectCameraCommand}"
+                          Margin="5"/>
+                    <Button Content="Settings" 
+                          Style="{StaticResource ModernButton}"
+                          Command="{Binding OpenSettingsCommand}"
+                          Margin="5"/>
+                    <Button Content="Guest Display" 
+                          Style="{StaticResource ModernButton}"
+                          Command="{Binding OpenGuestDisplayCommand}"
+                          Background="#28A745"
+                          Margin="5"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Main Content -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="1*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Live View Panel -->
+            <Border Grid.Column="0" Background="#252526" Margin="10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Live View Header -->
+                    <Border Grid.Row="0" Background="#2D2D30" Padding="15">
+                        <Grid>
+                            <TextBlock Text="Live View" 
+                                     FontSize="18" 
+                                     FontWeight="Bold" 
+                                     Foreground="White"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Content="Start Live View" 
+                                      Style="{StaticResource ModernButton}"
+                                      Command="{Binding StartLiveViewCommand}"
+                                      Margin="5,0"/>
+                                <Button Content="Stop" 
+                                      Style="{StaticResource ModernButton}"
+                                      Command="{Binding StopLiveViewCommand}"
+                                      Background="#DC3545"
+                                      Margin="5,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Live View Display -->
+                    <Border Grid.Row="1" Background="Black" Margin="10">
+                        <Grid>
+                            <Image x:Name="LiveViewImage" 
+                                 Source="{Binding LiveViewFrame}"
+                                 Stretch="Uniform"/>
+                            
+                            <!-- Countdown Overlay -->
+                            <Grid x:Name="CountdownOverlay" 
+                                Background="#80000000"
+                                Visibility="{Binding IsCountdownActive, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock Text="{Binding CountdownValue}" 
+                                         FontSize="200" 
+                                         FontWeight="Bold" 
+                                         Foreground="White" 
+                                         HorizontalAlignment="Center" 
+                                         VerticalAlignment="Center"/>
+                            </Grid>
+
+                            <!-- No Camera Message -->
+                            <TextBlock Text="No Camera Connected" 
+                                     FontSize="24" 
+                                     Foreground="#666" 
+                                     HorizontalAlignment="Center" 
+                                     VerticalAlignment="Center"
+                                     Visibility="{Binding IsCameraConnected, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Capture Controls -->
+                    <Border Grid.Row="2" Background="#2D2D30" Padding="15">
+                        <StackPanel>
+                            <Button Content="🎯 CAPTURE PHOTO" 
+                                  FontSize="24" 
+                                  FontWeight="Bold"
+                                  Height="80"
+                                  Style="{StaticResource ModernButton}"
+                                  Background="#28A745"
+                                  Command="{Binding CapturePhotoCommand}"
+                                  Margin="0,0,0,10"/>
+                            
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <Button Grid.Column="0" 
+                                      Content="Start Session" 
+                                      Style="{StaticResource ModernButton}"
+                                      Command="{Binding StartSessionCommand}"
+                                      Margin="5"/>
+                                <Button Grid.Column="1" 
+                                      Content="End Session" 
+                                      Style="{StaticResource ModernButton}"
+                                      Command="{Binding EndSessionCommand}"
+                                      Background="#DC3545"
+                                      Margin="5"/>
+                                <Button Grid.Column="2" 
+                                      Content="View Gallery" 
+                                      Style="{StaticResource ModernButton}"
+                                      Command="{Binding ViewGalleryCommand}"
+                                      Margin="5"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- Control Panel -->
+            <Border Grid.Column="1" Background="#252526" Margin="10">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="15">
+                        <!-- Camera Status -->
+                        <Border Background="#2D2D30" Padding="15" Margin="0,0,0,10" CornerRadius="5">
+                            <StackPanel>
+                                <TextBlock Text="Camera Status" 
+                                         FontSize="16" 
+                                         FontWeight="Bold" 
+                                         Foreground="White" 
+                                         Margin="0,0,0,10"/>
+                                
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Model:" Foreground="#AAA" Margin="0,5"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding CameraModel}" Foreground="White" Margin="10,5"/>
+                                    
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Battery:" Foreground="#AAA" Margin="0,5"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding BatteryLevel}" Foreground="White" Margin="10,5"/>
+                                    
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Shots:" Foreground="#AAA" Margin="0,5"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding AvailableShots}" Foreground="White" Margin="10,5"/>
+                                    
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Status:" Foreground="#AAA" Margin="0,5"/>
+                                    <TextBlock Grid.Row="3" Grid.Column="1" 
+                                             Text="{Binding CameraStatus}" 
+                                             Foreground="{Binding StatusColor}" 
+                                             Margin="10,5"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Session Settings -->
+                        <Border Background="#2D2D30" Padding="15" Margin="0,0,0,10" CornerRadius="5">
+                            <StackPanel>
+                                <TextBlock Text="Session Settings" 
+                                         FontSize="16" 
+                                         FontWeight="Bold" 
+                                         Foreground="White" 
+                                         Margin="0,0,0,10"/>
+                                
+                                <TextBlock Text="Photo Count:" Foreground="#AAA" Margin="0,5"/>
+                                <ComboBox SelectedIndex="{Binding PhotoCount}" Margin="0,5,0,10">
+                                    <ComboBoxItem Content="1 Photo"/>
+                                    <ComboBoxItem Content="2 Photos"/>
+                                    <ComboBoxItem Content="3 Photos"/>
+                                    <ComboBoxItem Content="4 Photos"/>
+                                </ComboBox>
+
+                                <TextBlock Text="Countdown (seconds):" Foreground="#AAA" Margin="0,5"/>
+                                <Slider Value="{Binding CountdownSeconds}" 
+                                      Minimum="0" 
+                                      Maximum="10" 
+                                      TickFrequency="1" 
+                                      IsSnapToTickEnabled="True"
+                                      Margin="0,5,0,5"/>
+                                <TextBlock Text="{Binding CountdownSeconds}" 
+                                         Foreground="White" 
+                                         HorizontalAlignment="Center"/>
+
+                                <CheckBox Content="Enable Printing" 
+                                        IsChecked="{Binding EnablePrinting}" 
+                                        Foreground="White" 
+                                        Margin="0,10"/>
+                                <CheckBox Content="Enable Sharing" 
+                                        IsChecked="{Binding EnableSharing}" 
+                                        Foreground="White" 
+                                        Margin="0,5"/>
+                                <CheckBox Content="Green Screen" 
+                                        IsChecked="{Binding EnableGreenScreen}" 
+                                        Foreground="White" 
+                                        Margin="0,5"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Template Selection -->
+                        <Border Background="#2D2D30" Padding="15" Margin="0,0,0,10" CornerRadius="5">
+                            <StackPanel>
+                                <TextBlock Text="Template" 
+                                         FontSize="16" 
+                                         FontWeight="Bold" 
+                                         Foreground="White" 
+                                         Margin="0,0,0,10"/>
+                                
+                                <ComboBox ItemsSource="{Binding Templates}" 
+                                        SelectedItem="{Binding SelectedTemplate}"
+                                        DisplayMemberPath="Name"
+                                        Margin="0,5,0,10"/>
+                                
+                                <Button Content="Edit Template" 
+                                      Style="{StaticResource ModernButton}"
+                                      Command="{Binding EditTemplateCommand}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Camera Settings -->
+                        <Border Background="#2D2D30" Padding="15" Margin="0,0,0,10" CornerRadius="5">
+                            <StackPanel>
+                                <TextBlock Text="Camera Settings" 
+                                         FontSize="16" 
+                                         FontWeight="Bold" 
+                                         Foreground="White" 
+                                         Margin="0,0,0,10"/>
+                                
+                                <TextBlock Text="ISO:" Foreground="#AAA" Margin="0,5"/>
+                                <ComboBox ItemsSource="{Binding AvailableISO}" 
+                                        SelectedItem="{Binding SelectedISO}"
+                                        Margin="0,5,0,10"/>
+
+                                <TextBlock Text="Aperture:" Foreground="#AAA" Margin="0,5"/>
+                                <ComboBox ItemsSource="{Binding AvailableApertures}" 
+                                        SelectedItem="{Binding SelectedAperture}"
+                                        Margin="0,5,0,10"/>
+
+                                <TextBlock Text="Shutter Speed:" Foreground="#AAA" Margin="0,5"/>
+                                <ComboBox ItemsSource="{Binding AvailableShutterSpeeds}" 
+                                        SelectedItem="{Binding SelectedShutterSpeed}"
+                                        Margin="0,5,0,10"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Statistics -->
+                        <Border Background="#2D2D30" Padding="15" CornerRadius="5">
+                            <StackPanel>
+                                <TextBlock Text="Session Statistics" 
+                                         FontSize="16" 
+                                         FontWeight="Bold" 
+                                         Foreground="White" 
+                                         Margin="0,0,0,10"/>
+                                
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Photos Taken" Foreground="#AAA" FontSize="12"/>
+                                        <TextBlock Text="{Binding PhotosTaken}" 
+                                                 Foreground="White" 
+                                                 FontSize="24" 
+                                                 FontWeight="Bold"/>
+                                    </StackPanel>
+                                    
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="Prints" Foreground="#AAA" FontSize="12"/>
+                                        <TextBlock Text="{Binding PrintCount}" 
+                                                 Foreground="White" 
+                                                 FontSize="24" 
+                                                 FontWeight="Bold"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="2" Background="#2D2D30" BorderBrush="#3E3E42" BorderThickness="0,1,0,0">
+            <Grid Margin="20,0">
+                <TextBlock Text="{Binding StatusMessage}" 
+                         Foreground="#AAA" 
+                         VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding CurrentTime}" 
+                         Foreground="#AAA" 
+                         HorizontalAlignment="Right" 
+                         VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
