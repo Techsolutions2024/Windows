@@ -1,0 +1,19 @@
+{
+  "name": "photobooth-pro",
+  "version": "1.0.0",
+  "description": "Professional commercial photobooth system",
+  "main": "index.js",
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "backend:build": "cd backend/build && cmake .. && cmake --build . --config Release",
+    "backend:run": "cd backend/build && .\\Release\\photobooth-server.exe",
+    "start": "concurrently \"npm run backend:run\" \"npm run dev\""
+  },
+  "keywords": ["photobooth", "canon", "edsdk", "react"],
+  "author": "Photobooth Pro Team",
+  "license": "Commercial",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

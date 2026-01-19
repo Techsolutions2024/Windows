@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Final Photo Collage Result</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Spline Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Spline Sans', sans-serif;
+            overflow: hidden;
+        }
+        .collage-frame {
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .bg-blur-overlay {
+            background: linear-gradient(rgba(16, 22, 34, 0.8), rgba(16, 22, 34, 0.95)), 
+                        url('https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&q=80&w=1920');
+            background-size: cover;
+            background-position: center;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-white h-screen w-screen flex flex-col">
+<!-- Header / TopNavBar -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-white/10 px-10 py-5 bg-background-dark/50 backdrop-blur-md z-10">
+<div class="flex items-center gap-4 text-white">
+<div class="size-8 flex items-center justify-center bg-primary rounded-lg">
+<span class="material-symbols-outlined text-white text-2xl">auto_awesome</span>
+</div>
+<div>
+<h2 class="text-white text-xl font-bold leading-tight tracking-tight">Event PhotoBooth</h2>
+<p class="text-[#92a4c9] text-xs uppercase tracking-widest font-medium">Grand Gala 2024</p>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center justify-center rounded-lg h-12 w-12 bg-white/5 hover:bg-white/10 text-white transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="flex items-center justify-center rounded-lg h-12 w-12 bg-white/5 hover:bg-white/10 text-white transition-colors">
+<span class="material-symbols-outlined">help</span>
+</button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 flex overflow-hidden relative bg-blur-overlay">
+<div class="flex-1 flex flex-col items-center justify-center p-8 gap-8">
+<!-- 2x2 Photo Collage Canvas -->
+<div class="collage-frame bg-white p-6 shadow-2xl rotate-1 transform-gpu">
+<div class="grid grid-cols-2 gap-4 w-[600px]">
+<div class="aspect-square bg-gray-200 overflow-hidden">
+<div class="w-full h-full bg-center bg-no-repeat bg-cover" data-alt="Candid shot of happy people laughing" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAiy10UOri6GoVgIS8BAX4eHNG6t6q0CN-QoFrn7L8wPaTj70L645CCs_NrmUk8I3ZfAy7pRWP5d2nH6PkGrMqMcOy49rKlX7dtJz3NxAiHdccN8rI1j23-8EDdoqzVXLTo6sYbqGbs0t3YLb4t4FXgEot-HJOAUCl0uLp-SJLK-MuYbjILbzOhR_mHBLLj9NbGJxmmDMLVo3M-oTtKTc8FHfwEdcQd1Uv8bnPhsGpPz46duGCNSCwoHJFvEbpuoDhJ08RzRrisC_o");'>
+</div>
+</div>
+<div class="aspect-square bg-gray-200 overflow-hidden">
+<div class="w-full h-full bg-center bg-no-repeat bg-cover" data-alt="Group of friends making funny faces" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBahu7D6EevpC4PYmDj4Vo5oZ1Flbrvhr0sOXb6B9SB7Hc_TYJimuTTCSPaYhAS4oio54KOyxfwTr9oh08Y13CLputlxxn7L6Dqo8dkclpRKYQ-ItKx5AJvpGb6FpQCr-nBa4zeZpEDVR5z-ABSjjA6ay6ZB_JFFRjF1Z5WLAOkphvuzrlzxjSEKaymvgAvik__vY6FdDtQccWWdgA0HtPYAClN-O4u1-C2IgvFX2uXYuIsg3PAAtdOQf_pjK0FSQhdjVb_DGPP0_M");'>
+</div>
+</div>
+<div class="aspect-square bg-gray-200 overflow-hidden">
+<div class="w-full h-full bg-center bg-no-repeat bg-cover" data-alt="A couple posing for the camera" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBGJE5JFRNEyquPW3yAxNWMutvhN7WZSRrbMkaggRNAYudAGBnCtw0mS9LWq-tPffm3Jxlte8asCXqn6i7uDlU5iQlZ14UsItOro-fHf7l2HMBDppYUHgwKVQjBSvhLrCIkZTphKgSBYj9CIKF3ivdNREj49uwCwH1T_B5RfJxo8TvwScdwT_gisSWAKiIVoDIJrh3V4HCASPkeSBOYon5h3K6gT0kj7TDhkT1QJcD-uO4n2ciJk9_LQ5PxS61j0ye5-0kIA5hOqvQ");'>
+</div>
+</div>
+<div class="aspect-square bg-gray-200 overflow-hidden">
+<div class="w-full h-full bg-center bg-no-repeat bg-cover" data-alt="Guests dancing at the event" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAxmBAmRfE15q-QyH-cVw9XUctNJP7Gb2fBB34F7VDOfJrRLFcFZHgFpwIAIljGbJ_W0Z2-7dmFc4jSTaBbx5Rj8LuyRHkOSm6Os3YK9LwGTTPgJgJcVqaSChuCff0V7SuoLbMGP18QNLiFRX3W8rrO1KWy7VLscNB-lGg2cZbQ79hTUUX8iyfzqWkTh3hgIU7a6RAvNSZladtHeiRhdT1bY_fojkrhYcrNVc201gY8hILxIibFUvkmNRX4Ol7g46XYcOhA7m0yiOY");'>
+</div>
+</div>
+</div>
+<div class="mt-8 flex justify-between items-end">
+<div>
+<p class="text-gray-900 font-bold text-lg leading-tight">THE GRAND GALA</p>
+<p class="text-gray-500 text-sm font-medium italic">December 15, 2024</p>
+</div>
+<div class="text-gray-400">
+<span class="material-symbols-outlined text-4xl">photo_library</span>
+</div>
+</div>
+</div>
+<!-- Footer / ButtonGroup -->
+<div class="flex justify-center w-full max-w-[600px]">
+<div class="flex flex-1 gap-6 px-4 py-3 justify-center">
+<button class="flex items-center justify-center gap-2 rounded-xl h-14 px-8 bg-white/10 hover:bg-white/20 text-white text-lg font-bold transition-all border border-white/10 grow">
+<span class="material-symbols-outlined">refresh</span>
+<span class="truncate">Retake All</span>
+</button>
+<button class="flex items-center justify-center gap-2 rounded-xl h-14 px-8 bg-white/5 hover:bg-white/10 text-white/70 text-lg font-bold transition-all grow">
+<span class="material-symbols-outlined">check_circle</span>
+<span class="truncate">Done</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Sidebar / ActionPanel & SideNavBar combination -->
+<aside class="w-[450px] bg-background-dark/80 backdrop-blur-xl border-l border-white/10 p-10 flex flex-col justify-between">
+<div class="flex flex-col gap-10">
+<div class="flex flex-col gap-2">
+<h1 class="text-white text-3xl font-bold leading-tight">Share Your Memory</h1>
+<p class="text-[#92a4c9] text-lg font-normal">Choose how you want to keep this moment forever.</p>
+</div>
+<div class="flex flex-col gap-4">
+<!-- Print Button (Primary) -->
+<button class="group flex items-center gap-6 p-6 rounded-2xl bg-primary hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
+<div class="w-16 h-16 rounded-xl bg-white/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-4xl text-white">print</span>
+</div>
+<div class="text-left">
+<p class="text-white text-xl font-bold leading-none mb-1">Print Photo</p>
+<p class="text-white/70 text-sm font-medium">Instant 2x2 physical strip</p>
+</div>
+<div class="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">chevron_right</span>
+</div>
+</button>
+<!-- Email Button -->
+<button class="group flex items-center gap-6 p-6 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all">
+<div class="w-16 h-16 rounded-xl bg-white/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-4xl text-white">mail</span>
+</div>
+<div class="text-left">
+<p class="text-white text-xl font-bold leading-none mb-1">Send to Email</p>
+<p class="text-[#92a4c9] text-sm font-medium">Digital copy in full resolution</p>
+</div>
+<div class="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">chevron_right</span>
+</div>
+</button>
+<!-- QR Code Button -->
+<button class="group flex items-center gap-6 p-6 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all">
+<div class="w-16 h-16 rounded-xl bg-white/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-4xl text-white">qr_code_2</span>
+</div>
+<div class="text-left">
+<p class="text-white text-xl font-bold leading-none mb-1">Scan QR Code</p>
+<p class="text-[#92a4c9] text-sm font-medium">Download directly to phone</p>
+</div>
+<div class="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">chevron_right</span>
+</div>
+</button>
+</div>
+</div>
+<!-- Bottom Action Summary -->
+<div class="p-6 rounded-2xl border border-primary/30 bg-primary/10 backdrop-blur-sm">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center animate-pulse">
+<span class="material-symbols-outlined text-white text-xl">info</span>
+</div>
+<div>
+<p class="text-white text-sm font-bold">Ready to collect?</p>
+<p class="text-[#92a4c9] text-xs">Collages are printed in under 30 seconds.</p>
+</div>
+</div>
+</div>
+</aside>
+</main>
+<!-- Overlay hint (Optional UI enhancement for photobooths) -->
+<div class="absolute bottom-6 left-6 text-white/30 text-xs font-medium uppercase tracking-[0.2em] pointer-events-none">
+        Kiosk ID: BOOTH-04 // Session #8429
+    </div>
+</body></html>

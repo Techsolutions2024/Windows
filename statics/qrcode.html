@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>QR Code Sharing Pop-up</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Spline Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: "Spline Sans", sans-serif;
+        }
+        .blur-overlay {
+            backdrop-filter: blur(20px);
+            background-color: rgba(16, 22, 34, 0.85);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark overflow-hidden font-display">
+<!-- 1920x1080 Container (Simulated) -->
+<div class="relative w-full h-screen min-h-[1080px] max-w-[1920px] mx-auto overflow-hidden bg-background-dark">
+<!-- Background Layer: Simulated Blurred Photobooth Result Screen -->
+<div class="absolute inset-0 z-0 flex flex-col p-12">
+<!-- Header (Blurred) -->
+<div class="flex justify-between items-center mb-12 opacity-50">
+<div class="flex items-center gap-4 text-white">
+<div class="size-8">
+<svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M12.0799 24L4 19.2479L9.95537 8.75216L18.04 13.4961L18.0446 4H29.9554L29.96 13.4961L38.0446 8.75216L44 19.2479L35.92 24L44 28.7521L38.0446 39.2479L29.96 34.5039L29.9554 44H18.0446L18.04 34.5039L9.95537 39.2479L4 28.7521L12.0799 24Z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+<h2 class="text-2xl font-bold tracking-tight">PhotoBooth Pro</h2>
+</div>
+<div class="flex gap-4">
+<div class="h-14 w-40 bg-white/10 rounded-lg"></div>
+<div class="h-14 w-40 bg-white/10 rounded-lg"></div>
+</div>
+</div>
+<!-- Content Grid (Blurred Photo Collage) -->
+<div class="grid grid-cols-2 gap-8 flex-1 opacity-40">
+<div class="rounded-xl bg-center bg-cover border-4 border-white/20" data-alt="Vertical photobooth strip with four poses" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCnlA6dGYWRiXCFTjXAeSkEf03NXh1Bm95YllOLPL39_cxOljuCkmCu5Bgwv9ZznZff5MTvFQBAcxJg1wCSvFYz6rqkdWC5Uj4sktTvLC_bXtZ_NSMgV_snf1kCaQwe7jpMId2o1--GQNf40Xcn8b2pvS6TKJX-HEaZpZGK127X04MLBqdK-6w1cySHlYxtnVA5_GS6E5AlAyieMXBjmh1nAqLpx6_dNLb6pexjDA-kEJ3VMky45icFUYYMGHLZnw2SedgBU_2Y7Qk');"></div>
+<div class="grid grid-rows-2 gap-8">
+<div class="rounded-xl bg-center bg-cover border-4 border-white/20" data-alt="Close up group photo of friends smiling" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCRGexS5h7Ue2K-S8X4Yly_MfwsvUYzx0SVVG5TFDY0MrrGYtEd9nnHd1a-nLGNcnjljdzX9Duncorf3nAej_0N54jq8BHD3SBkkCr2qlDs9SjkiIjPG1uQzrfL3qI5nUX4B_UeMFYCVYjQuiKwwj_MbTQON1gRZTUxQdSd5xPlML-YwzUvresNZ_yADtcteq8idXkdD6xXxPq7AtjHvOWIqwrjSfivtCfPfsqv15h7K9WP7qwAYIm6S60wB80ciSalwfMl7MKRouY');"></div>
+<div class="rounded-xl bg-center bg-cover border-4 border-white/20" data-alt="Candid celebration moment at a party" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAdZC6NjmTyr6Yp_UNNfMPjVO_1woC4eQ6iToGmDCQrUs3Hn9gRfaHuCdH-5S8CiQ_MxqcqJeoAqy8EZiCtgS22fQe5SxFLtrUa9u4x76MKISCrOYlzOecrijIO7MLe01OB1eW20jwzjL0GDgGzkvE7VxIKj0uP_d3wn_lSZiOnYjPMaFTJqzQuK0nAkyDp__xu4oQtRRvvo74AwZVKiWbMgQ6fp6x6j1EjfT7s62mshvKHavBGb0NXUjjqTutUMwwj5yojG3_UzL0');"></div>
+</div>
+</div>
+</div>
+<!-- Dimming/Blur Overlay -->
+<div class="absolute inset-0 z-10 blur-overlay"></div>
+<!-- Modal Pop-up Container -->
+<div class="absolute inset-0 z-20 flex items-center justify-center">
+<div class="bg-white dark:bg-white w-[640px] rounded-xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.5)] flex flex-col items-center p-12 text-center">
+<!-- Section Header Component -->
+<div class="mb-2">
+<h2 class="text-slate-900 text-3xl font-bold leading-tight tracking-tight">Your Photo is Ready!</h2>
+</div>
+<!-- Headline Text Component -->
+<div class="mb-10 px-8">
+<p class="text-slate-600 text-xl font-medium">Scan to download your photo directly to your phone.</p>
+</div>
+<!-- QR Code Display Area -->
+<div class="relative group p-6 bg-slate-50 rounded-xl border-2 border-slate-100 mb-8">
+<div class="w-[320px] h-[320px] bg-white flex items-center justify-center p-4 rounded-lg shadow-sm">
+<!-- Simulated High Contrast QR Code -->
+<div class="w-full h-full bg-center bg-contain bg-no-repeat" data-alt="Large black and white QR code for digital photo download" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCenify2BT7Uvo0ROxPG3LXb9OWiXAXbo6qO9MBSf8WULivREF9oKkApw25mNzDSIz5MhpOqKZhHCMti6jX3571AicgPlWLIrbS68NPqSlraYP70v9D8RkQIH4FhJiNE38B39iw1wRdHrk8ZYFzPLrfPPzN_W-0_taBJNQ6OeHVSr9IxDuERXyBbMMqyXOMxpZz0-cbP-dCVySNnu-hhoKERiYl9gWD4iIJxi0AUYyNZ5dnGOwSTrwyDCiLfUN4_841LccouLKQPqg');">
+</div>
+</div>
+</div>
+<!-- Meta Text Component -->
+<div class="mb-10">
+<p class="text-slate-500 text-base font-normal mb-1">Having trouble scanning?</p>
+<p class="text-primary text-lg font-semibold underline cursor-pointer">pix.io/ABCD-123</p>
+</div>
+<!-- Action Button -->
+<button class="w-full h-16 bg-primary hover:bg-primary/90 text-white rounded-xl flex items-center justify-center gap-3 transition-colors">
+<span class="text-xl font-bold uppercase tracking-wider">Done</span>
+<span class="material-symbols-outlined text-2xl">check_circle</span>
+</button>
+<!-- Close Icon (Top Right) -->
+<button class="absolute top-6 right-6 text-slate-400 hover:text-slate-600 transition-colors">
+<span class="material-symbols-outlined text-3xl">close</span>
+</button>
+</div>
+</div>
+<!-- Floating UI elements for Photobooth context -->
+<div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex gap-6 opacity-30 pointer-events-none">
+<div class="flex items-center gap-2 text-white">
+<span class="material-symbols-outlined">wifi</span>
+<span class="text-sm font-medium">Station: BOOTH-01</span>
+</div>
+<div class="flex items-center gap-2 text-white">
+<span class="material-symbols-outlined">update</span>
+<span class="text-sm font-medium">Auto-reset in 45s</span>
+</div>
+</div>
+</div>
+</body></html>

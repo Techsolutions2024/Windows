@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Event Management Dashboard - Configuration Edit</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary-blue": "#0091ff",
+                        "background-dark": "#121212",
+                        "surface-dark": "#1e1e1e",
+                        "border-dark": "#333333",
+                        "accent-blue": "#007acc"
+                    },
+                    fontFamily: {
+                        "display": ["Spline Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "4px",
+                        "lg": "8px",
+                        "xl": "12px",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Spline Sans', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #121212;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #444;
+        }
+    </style>
+</head>
+<body class="bg-background-dark text-white min-h-screen flex flex-col overflow-hidden">
+<header class="h-14 border-b border-border-dark flex items-center justify-between px-6 bg-background-dark">
+<div class="flex items-center gap-2">
+<span class="text-sm font-semibold mr-4">Your events</span>
+<div class="flex items-center gap-2">
+<button class="px-4 py-1.5 border border-white/60 rounded-full text-xs font-medium hover:bg-white/10 transition-colors">Select All</button>
+<button class="px-4 py-1.5 border border-white/60 rounded-full text-xs font-medium hover:bg-white/10 transition-colors">Rename event</button>
+<button class="px-4 py-1.5 border border-white/60 rounded-full text-xs font-medium hover:bg-white/10 transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">delete</span> Delete
+            </button>
+<button class="px-4 py-1.5 border border-white/60 rounded-full text-xs font-medium hover:bg-white/10 transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">content_copy</span> Duplicate
+            </button>
+<button class="px-4 py-1.5 border border-white/60 rounded-full text-xs font-medium hover:bg-white/10 transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">add</span> New event
+            </button>
+</div>
+</div>
+<div>
+<button class="bg-primary-blue hover:bg-accent-blue text-white px-6 py-1.5 rounded-full flex items-center gap-2 text-sm font-bold transition-all">
+<span class="material-symbols-outlined text-lg">rocket_launch</span>
+            Launch event
+        </button>
+</div>
+</header>
+<div class="h-14 border-b border-border-dark flex items-center px-6 gap-4 bg-background-dark">
+<button class="flex items-center gap-2 px-4 py-1.5 border border-white/60 rounded-full text-xs font-medium">
+<span class="material-symbols-outlined text-sm">sort_by_alpha</span>
+        Sort by name
+    </button>
+<div class="relative">
+<select class="bg-transparent border border-white/40 rounded-lg text-xs py-1.5 pl-3 pr-8 appearance-none focus:ring-1 focus:ring-primary-blue outline-none cursor-pointer">
+<option>All time</option>
+<option>Last 7 days</option>
+<option>Last 30 days</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-sm pointer-events-none">expand_more</span>
+</div>
+<div class="relative flex-1 max-w-xs ml-auto">
+<input class="w-full bg-transparent border-b border-white/40 border-t-0 border-l-0 border-r-0 py-1.5 text-sm focus:ring-0 focus:border-primary-blue outline-none placeholder:text-white/40" placeholder="Find your event" type="text"/>
+<span class="material-symbols-outlined absolute right-0 top-1/2 -translate-y-1/2 text-lg text-white/60">search</span>
+</div>
+</div>
+<div class="flex-1 flex overflow-hidden">
+<main class="flex-1 overflow-y-auto p-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+<div class="group relative rounded-lg border-2 border-primary-blue bg-surface-dark overflow-hidden p-2 transition-all cursor-pointer">
+<div class="absolute top-3 left-3 z-10">
+<div class="w-5 h-5 bg-primary-blue rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-sm font-bold">check</span>
+</div>
+</div>
+<button class="absolute top-3 right-3 z-10 w-8 h-8 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center transition-all border border-white/10">
+<span class="material-symbols-outlined text-lg text-white">settings</span>
+</button>
+<div class="aspect-video bg-white mb-2 rounded overflow-hidden">
+<div class="w-full h-full bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC9JOmzdKayla1qtzB2e-myOgo0bgiaJlLaMNjTlpymJ8w11rfBMGESduRfQCIMdknrNrrFy_Bca5ekF48UcuD7IsYu6fsypy1QtvktMTnyWM4fgjunG6ZfWIZoQzsrpbdfy4HslqhEYN1P7g9YkMQ1ubuABYAiCjiKlNtVUtJc1tnENuqxK-DJZkWp8s9QWFlbdde3qeoAHimAS-AV8680J87ytCo0RBmpqEA3_IRDa8fnglrKg01UtKr7_J_HYVOrX8XV5SwJJxI')"></div>
+</div>
+<div class="text-center pb-2">
+<p class="text-xs font-medium text-white">thien</p>
+<p class="text-[10px] text-white/40 mt-1">35 minutes ago</p>
+</div>
+</div>
+<div class="group relative rounded-lg border border-border-dark bg-background-dark/50 hover:border-white/40 overflow-hidden p-2 transition-all cursor-pointer">
+<div class="aspect-video bg-white/10 mb-2 rounded overflow-hidden">
+<div class="w-full h-full bg-cover bg-center opacity-60" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA5B-CKfRg-et3xxEUBdKqdSiqRERR1ZjL_iBTBISGOsqOLrIBFROum7zzJ3a-XaCx4-2XAIW5wt8itb40LB2JOl2427dr8O9lmBfwg9q7VMQDYIFEi1OsN88hn29rPHVJeBsPiESG9JpzYgeh59pYFiaRXldhCPDt2-o84BJgFd9j-VaF7L8SwqNxy36l6Rs35McZFopgrqpLhw2llC6CYxROt1KadrR9_1dvhrMQv14q-e2v1CwaR51nVjwA0kN38NnQYoPhNngU')"></div>
+</div>
+<div class="text-center pb-2">
+<p class="text-xs font-medium text-white/80">Wedding_Template_01</p>
+<p class="text-[10px] text-white/40 mt-1">2 hours ago</p>
+</div>
+</div>
+<div class="group relative rounded-lg border border-border-dark bg-background-dark/50 hover:border-white/40 overflow-hidden p-2 transition-all cursor-pointer">
+<div class="aspect-video bg-white/10 mb-2 rounded overflow-hidden">
+<div class="w-full h-full bg-cover bg-center opacity-60" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDSeFQMrrRnDZijsatzsHMu3SwWdYSiotOXkmp0RVDRTN1HiJAlwOj-b8a_UwXBhTmyFLNAtWexMfHzWW761SHB8sCvrb8upCxx8LYuFjhxRj99KSS_Vij2wY31aKmuvevTmYqhPpmuC5FEzvIFNG4GlhozSz0kXrGxkeFZst8K6KoZy2io2qN8lDqoi5z0AWTiNhdd3i00yQaFkJn6qi_cWJlhmqKEKBAX4WIeFHWxh6kal076qVyBMWxxle9JfqtSdw5R0EklmVc')"></div>
+</div>
+<div class="text-center pb-2">
+<p class="text-xs font-medium text-white/80">Birthday_Session</p>
+<p class="text-[10px] text-white/40 mt-1">1 day ago</p>
+</div>
+</div>
+<div class="group relative rounded-lg border border-border-dark bg-background-dark/50 hover:border-white/40 overflow-hidden p-2 transition-all cursor-pointer">
+<div class="aspect-video bg-white/10 mb-2 rounded overflow-hidden">
+<div class="w-full h-full bg-cover bg-center opacity-60" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDsSlIw2kQOj46HjlKJMVinXxu1Fop9YpsykFdIKI1MazIah8FTkJPKhf_7GttmzZdxUw1pX_JO2VB2CJ7S0ANAfwVZ6PxkHC26c8qskB3nOjMgDVfK6auX9eDw8cHZxcTBGX8RRCnxcEteHwbaIhh04jXVrB3RzizUiNkDdlMwIqtqhMRAmAk78ddAsG1hTc65qzkjnLlL2OeYR7-9ST5ouL8x4OtFz_wV0JWQobAP5FkFn68Z-fyTvFJ9yz_VmGrPyHgeMFLZdg0')"></div>
+</div>
+<div class="text-center pb-2">
+<p class="text-xs font-medium text-white/80">Corporate_Gala</p>
+<p class="text-[10px] text-white/40 mt-1">3 days ago</p>
+</div>
+</div>
+</div>
+</main>
+<aside class="w-[400px] border-l border-border-dark flex flex-col bg-background-dark overflow-y-auto">
+<div class="p-6 pb-2">
+<button class="w-full bg-surface-dark hover:bg-white/5 border border-border-dark rounded-lg py-3 px-4 flex items-center justify-between group transition-colors mb-6">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary-blue">tune</span>
+<span class="text-sm font-bold">Configure Event</span>
+</div>
+<span class="material-symbols-outlined text-white/40 group-hover:text-white transition-colors">chevron_right</span>
+</button>
+<h3 class="text-sm font-semibold mb-4">Start screen</h3>
+<div class="relative aspect-video bg-surface-dark rounded border border-border-dark flex items-center justify-center overflow-hidden">
+<div class="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none">
+<div class="text-6xl material-symbols-outlined">image</div>
+</div>
+<div class="flex gap-4 z-10">
+<div class="flex flex-col items-center gap-1">
+<div class="w-8 h-8 rounded-full border border-white flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">print</span>
+</div>
+<span class="text-[8px] uppercase">Print</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<div class="w-8 h-8 rounded-full border border-white flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">all_inclusive</span>
+</div>
+<span class="text-[8px] uppercase">Boomerang</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<div class="w-8 h-8 rounded-full border border-white flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">videocam</span>
+</div>
+<span class="text-[8px] uppercase">Video</span>
+</div>
+</div>
+<div class="absolute -rotate-45 text-[10px] text-white/10 whitespace-nowrap pointer-events-none font-bold scale-150">
+                    dslrBooth Demo. Subscribe to remove watermark.
+                </div>
+<span class="material-symbols-outlined absolute top-4 left-4 text-lg text-white/60">image_search</span>
+<span class="material-symbols-outlined absolute top-4 right-4 text-lg text-white/60">fullscreen</span>
+</div>
+</div>
+<hr class="border-border-dark mx-6"/>
+<div class="p-6">
+<h3 class="text-sm font-semibold mb-6">Capture</h3>
+<div class="grid grid-cols-4 gap-4 text-center">
+<div class="flex flex-col items-center gap-3">
+<div class="w-14 h-14 rounded-xl border-2 border-primary-blue flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl text-primary-blue">camera_alt</span>
+</div>
+<span class="text-[11px] font-medium">Photo</span>
+</div>
+<div class="flex flex-col items-center gap-3">
+<div class="w-14 h-14 rounded-xl border-2 border-primary-blue flex items-center justify-center">
+<div class="relative w-8 h-8 border-2 border-primary-blue rounded-sm before:absolute before:-top-1 before:-right-1 before:w-8 before:h-8 before:border-2 before:border-primary-blue before:rounded-sm"></div>
+</div>
+<span class="text-[11px] font-medium text-white/80">GIF</span>
+</div>
+<div class="flex flex-col items-center gap-3">
+<div class="w-14 h-14 rounded-xl border border-white/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl text-white/60">all_inclusive</span>
+</div>
+<span class="text-[11px] font-medium text-white/60">Boomerang</span>
+</div>
+<div class="flex flex-col items-center gap-3">
+<div class="w-14 h-14 rounded-xl border-2 border-primary-blue flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl text-primary-blue">videocam</span>
+</div>
+<span class="text-[11px] font-medium text-white/80">Video</span>
+</div>
+</div>
+</div>
+<hr class="border-border-dark mx-6"/>
+<div class="flex-1 px-6 py-4 space-y-4">
+<div class="flex items-center justify-between group cursor-pointer">
+<span class="text-sm text-white/80 group-hover:text-white">Effects</span>
+<span class="material-symbols-outlined text-white/40 group-hover:text-white">chevron_right</span>
+</div>
+<div class="flex items-center justify-between group cursor-pointer">
+<span class="text-sm text-white/80 group-hover:text-white">Digital Props</span>
+<span class="material-symbols-outlined text-white/40 group-hover:text-white">chevron_right</span>
+</div>
+<div class="flex items-center justify-between group cursor-pointer">
+<span class="text-sm text-white/80 group-hover:text-white">Beauty Filter</span>
+<span class="material-symbols-outlined text-white/40 group-hover:text-white">chevron_right</span>
+</div>
+<div class="flex items-center justify-between group cursor-pointer">
+<span class="text-sm text-white/80 group-hover:text-white">Watermark</span>
+<span class="material-symbols-outlined text-white/40 group-hover:text-white">chevron_right</span>
+</div>
+<div class="flex items-center justify-between group cursor-pointer">
+<span class="text-sm text-white/80 group-hover:text-white">Post Processing</span>
+<span class="material-symbols-outlined text-white/40 group-hover:text-white">chevron_right</span>
+</div>
+</div>
+</aside>
+</div>
+
+</body></html>

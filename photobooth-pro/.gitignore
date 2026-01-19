@@ -1,0 +1,71 @@
+# Build directories
+backend/build/
+backend/lib/
+frontend/dist/
+frontend/node_modules/
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Compiled files
+*.exe
+*.dll
+*.so
+*.dylib
+*.obj
+*.o
+*.a
+*.lib
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Photos and media
+photos/
+uploads/
+temp/
+
+# Environment
+.env
+.env.local
+config.json
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Package manager
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# Visual Studio
+.vs/
+*.vcxproj.user
+*.vcxproj.filters
+x64/
+Debug/
+Release/
+
+# Node
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

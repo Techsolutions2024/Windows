@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Modern Photobooth Start Screen</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#0ea5e9",
+              "background-light": "#f8fafc",
+              "background-dark": "#121212",
+            },
+            fontFamily: {
+              display: ["Inter", "sans-serif"],
+            },
+            borderRadius: {
+              DEFAULT: "0.75rem",
+            },
+          },
+        },
+      };
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+        .action-button {
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .action-button:active {
+            transform: scale(0.92);
+        }
+        .gradient-bg {
+            background: radial-gradient(circle at center, #2c2c2c 0%, #121212 100%);
+        }
+        .light-gradient-bg {
+            background: radial-gradient(circle at center, #ffffff 0%, #f1f5f9 100%);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white min-h-screen flex flex-col justify-between p-8 md:p-12 overflow-hidden transition-colors duration-300">
+<header class="flex justify-between items-start w-full z-10">
+<div class="w-24 h-24 md:w-32 md:h-32 bg-white/10 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10 flex items-center justify-center backdrop-blur-sm">
+<span class="text-slate-400 dark:text-white/20 text-xs font-medium uppercase tracking-widest text-center px-2">Your Logo</span>
+</div>
+<div class="flex items-center space-x-4">
+<button class="p-3 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg shadow-red-500/30 transition-all flex items-center justify-center">
+<span class="material-icons-outlined text-2xl">qr_code_2</span>
+</button>
+<button class="p-3 bg-primary hover:bg-primary/90 text-white rounded-full shadow-lg shadow-primary/30 transition-all flex items-center justify-center">
+<span class="material-icons-outlined text-2xl">expand_more</span>
+</button>
+</div>
+</header>
+<div class="fixed inset-0 z-0 pointer-events-none transition-opacity duration-1000">
+<div class="absolute inset-0 dark:block hidden gradient-bg"></div>
+<div class="absolute inset-0 block dark:hidden light-gradient-bg"></div>
+</div>
+<main class="flex-grow flex flex-col items-center justify-center z-10">
+<div class="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-16 items-center">
+<div class="flex flex-col items-center space-y-4 group">
+<button class="action-button w-24 h-24 md:w-32 md:h-32 rounded-full bg-white dark:bg-white text-slate-800 flex items-center justify-center shadow-xl hover:shadow-2xl transition-all">
+<span class="material-icons-outlined text-4xl md:text-5xl">photo_camera</span>
+</button>
+<span class="text-slate-700 dark:text-white text-lg md:text-xl font-bold tracking-wide uppercase group-hover:text-primary transition-colors">Print</span>
+</div>
+<div class="flex flex-col items-center space-y-4 group">
+<button class="action-button w-24 h-24 md:w-32 md:h-32 rounded-full bg-white dark:bg-white text-slate-800 flex items-center justify-center shadow-xl hover:shadow-2xl transition-all">
+<span class="material-icons-outlined text-4xl md:text-5xl">collections</span>
+</button>
+<span class="text-slate-700 dark:text-white text-lg md:text-xl font-bold tracking-wide uppercase group-hover:text-primary transition-colors">GIF</span>
+</div>
+<div class="flex flex-col items-center space-y-4 group">
+<button class="action-button w-24 h-24 md:w-32 md:h-32 rounded-full bg-white dark:bg-white text-slate-800 flex items-center justify-center shadow-xl hover:shadow-2xl transition-all">
+<span class="material-icons-outlined text-4xl md:text-5xl">all_inclusive</span>
+</button>
+<span class="text-slate-700 dark:text-white text-lg md:text-xl font-bold tracking-wide uppercase group-hover:text-primary transition-colors">Boomerang</span>
+</div>
+<div class="flex flex-col items-center space-y-4 group">
+<button class="action-button w-24 h-24 md:w-32 md:h-32 rounded-full bg-white dark:bg-white text-slate-800 flex items-center justify-center shadow-xl hover:shadow-2xl transition-all">
+<span class="material-icons-outlined text-4xl md:text-5xl">videocam</span>
+</button>
+<span class="text-slate-700 dark:text-white text-lg md:text-xl font-bold tracking-wide uppercase group-hover:text-primary transition-colors">Video</span>
+</div>
+</div>
+</main>
+<footer class="w-full text-center z-10">
+<p class="text-slate-400 dark:text-slate-500 font-medium tracking-widest uppercase text-sm animate-pulse">
+            Touch a mode to start the fun
+        </p>
+</footer>
+<div class="fixed bottom-4 right-4 z-50">
+<button class="p-3 rounded-full bg-white dark:bg-slate-800 shadow-md text-slate-600 dark:text-slate-300 hover:text-primary" onclick="document.documentElement.classList.toggle('dark')">
+<span class="material-icons-outlined block dark:hidden">dark_mode</span>
+<span class="material-icons-outlined hidden dark:block">light_mode</span>
+</button>
+</div>
+
+</body></html>

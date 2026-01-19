@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Spline Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .motion-blur-fly {
+            filter: blur(4px);
+            transform: skewX(-15deg);
+            box-shadow: -20px 0 30px rgba(19, 91, 236, 0.4);
+        }
+        .glow-active {
+            box-shadow: 0 0 20px 2px rgba(19, 91, 236, 0.7);
+        }
+        body {
+            font-family: 'Spline Sans', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-white font-display">
+<!-- 1920x1080 Container Aspect Ratio Mockup -->
+<div class="relative w-full h-screen overflow-hidden flex flex-col items-center justify-center bg-black">
+<!-- Top Navigation Bar -->
+<header class="absolute top-0 left-0 w-full z-50 flex items-center justify-between px-10 py-6">
+<button class="flex items-center justify-center rounded-lg size-12 bg-white/10 hover:bg-white/20 text-white backdrop-blur-md transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+<div class="px-4 py-2 bg-black/40 backdrop-blur-md rounded-full border border-white/10 text-sm font-medium tracking-widest uppercase">
+                Session Active
+            </div>
+</header>
+<!-- Main Live View Area (Last Captured Photo Dimmed) -->
+<div class="relative w-full h-full flex items-center justify-center bg-[#0a0a0a]">
+<div class="relative w-[85%] aspect-video rounded-xl overflow-hidden shadow-2xl border border-white/5">
+<!-- Main Photo -->
+<div class="absolute inset-0 bg-cover bg-center grayscale-[20%] brightness-50" data-alt="A portrait photo of people smiling in a photobooth" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBpatJklIKTF0hhnpikxqGje5vccY1ITdnvZ0yKLbJDJXuyj3HlDHmdAHhuphuy_u1KfaQdimy3KkA1-WwubHcLuEgDeGdLJzmHsfL1xNiEczNJx5kRlLvK-98uIjRNLhwjK0dSBeaL-BUZrSzWN9Rg3iylDp2oLanMM8oSs5eddY6Z8hXHF1vPXNY9i7sHfmImwXwbBXApxxsGXp47LKZh8_Er7uOA2otEb3U24JC3XB5-CJme2AM8Ko3bqV4u9SkciEquxTgi9Qs');">
+</div>
+<!-- Central Countdown Overlay (Faintly Visible) -->
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<h1 class="text-white/20 text-[240px] font-bold leading-none select-none">3</h1>
+</div>
+<!-- Overlay message -->
+<div class="absolute bottom-12 left-0 right-0 text-center">
+<p class="text-primary text-xl font-bold tracking-[0.2em] uppercase drop-shadow-lg">Get Ready for Next Pose</p>
+</div>
+</div>
+<!-- THE FLYING THUMBNAIL (Motion Effect) -->
+<!-- Positioned between center and bottom tray to simulate movement -->
+<div class="absolute bottom-[20%] right-[40%] w-48 aspect-video rounded-lg overflow-hidden motion-blur-fly z-40 border-2 border-primary/50" data-alt="A small blurred version of the captured photo moving downwards" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBfIS8ywF_NVVyN4prCJLjbkDYn7y19_ZlC9kPesrX_iibB_77X9I-ARqS7XergpPXXzryCzKWo-hGveerFF5sh87f-5cftvr3c4A6k_NSc3GM0VrSoJjD9yELzlSJqRAdEP3TtuoIx0UgkjQJ98PjPi0auA3EQhr-KgY9WWX2fthSBTDTGEJfrf6R6Cyf9DjNotlTZABtUPyaztGohmebMT_DV4DtvAYuRVrRCacImUTnxeKNAZj4wVLr7BHzVxe2M_H0AUPO6PoU'); background-size: cover; background-position: center;">
+</div>
+</div>
+<!-- Bottom Photo Strip Tray -->
+<div class="absolute bottom-0 w-full bg-gradient-to-t from-black via-black/80 to-transparent pb-10 pt-20 px-40">
+<div class="flex justify-center items-end gap-6 h-40">
+<!-- Photo 1: Active/Filling Slot -->
+<div class="flex flex-col items-center gap-3">
+<div class="relative w-48 aspect-video rounded-lg bg-primary/20 border-2 border-primary glow-active overflow-hidden">
+<!-- Filling animation simulation: half visible photo -->
+<div class="absolute inset-0 bg-cover bg-center opacity-40" data-alt="Photo 1 slot with captured image partially appearing" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDeCdzMiCeazL9vh7Y57Zog4mK_DkadRihxj5vAS-7flLgy2g8dVSC4bUC72UjMAM6xlO6Ak8a1xsrfJA3CBOZF_G9P1qddQuseGwSGRYo-ePLIFuxAqI8hsg2Fxcokm8WYJpihKG_25OzmP6wicz7ZM7gj1c5gvrkswNGJtmlhlq4MSoCP5ad5eBdGW4HqogQBmgypnIHcd_Vl1LG_JMX2K0vujbp7NlB9iWawjhDkJTfCdhtRxYeLrXyewn_3SYGn0AIyt59BjMI');">
+</div>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="bg-primary px-3 py-1 rounded text-[10px] font-bold uppercase tracking-tighter">Saving...</div>
+</div>
+</div>
+<span class="text-primary text-xs font-bold uppercase tracking-widest">Photo 1</span>
+</div>
+<!-- Photo 2: Pending -->
+<div class="flex flex-col items-center gap-3 opacity-40">
+<div class="w-48 aspect-video rounded-lg bg-[#232f48] border border-white/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-white/20 text-4xl">add_a_photo</span>
+</div>
+<span class="text-white/40 text-xs font-bold uppercase tracking-widest">Photo 2</span>
+</div>
+<!-- Photo 3: Pending -->
+<div class="flex flex-col items-center gap-3 opacity-40">
+<div class="w-48 aspect-video rounded-lg bg-[#232f48] border border-white/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-white/20 text-4xl">add_a_photo</span>
+</div>
+<span class="text-white/40 text-xs font-bold uppercase tracking-widest">Photo 3</span>
+</div>
+<!-- Photo 4: Pending -->
+<div class="flex flex-col items-center gap-3 opacity-40">
+<div class="w-48 aspect-video rounded-lg bg-[#232f48] border border-white/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-white/20 text-4xl">add_a_photo</span>
+</div>
+<span class="text-white/40 text-xs font-bold uppercase tracking-widest">Photo 4</span>
+</div>
+</div>
+</div>
+<!-- Decorative Elements -->
+<div class="absolute top-1/2 left-8 -translate-y-1/2 flex flex-col gap-4 opacity-20 pointer-events-none">
+<div class="w-1 h-20 bg-primary rounded-full"></div>
+<div class="w-1 h-8 bg-white/20 rounded-full"></div>
+<div class="w-1 h-8 bg-white/20 rounded-full"></div>
+</div>
+<div class="absolute top-1/2 right-8 -translate-y-1/2 flex flex-col gap-4 items-end opacity-20 pointer-events-none">
+<div class="w-8 h-1 bg-white/20 rounded-full"></div>
+<div class="w-20 h-1 bg-primary rounded-full"></div>
+<div class="w-8 h-1 bg-white/20 rounded-full"></div>
+</div>
+</div>
+</body></html>

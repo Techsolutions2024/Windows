@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Template Presets Library View</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f20da6",
+                        "background-light": "#f8f5f7",
+                        "background-dark": "#22101c",
+                        "surface-dark": "#2d1525",
+                        "border-dark": "#49223c",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .template-card:hover .hover-overlay {
+            opacity: 1;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .active-nav {
+            background-color: #49223c;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white min-h-screen">
+<div class="flex h-screen overflow-hidden">
+<!-- Sidebar Navigation -->
+<aside class="w-64 flex flex-col border-r border-solid border-[#49223c] bg-background-light dark:bg-background-dark">
+<div class="p-6 flex flex-col gap-1">
+<h1 class="text-xl font-bold tracking-tight text-primary">Preset Library</h1>
+<p class="text-xs text-slate-500 dark:text-[#cb90b7] uppercase tracking-widest font-semibold">Photobooth Management</p>
+</div>
+<nav class="flex-1 px-4 space-y-2 overflow-y-auto">
+<div class="flex items-center gap-3 px-3 py-2.5 rounded-lg active-nav cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<p class="text-sm font-medium">All Templates</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-200 dark:hover:bg-[#49223c]/50 cursor-pointer text-slate-600 dark:text-[#cb90b7] transition-colors">
+<span class="material-symbols-outlined text-[20px]">favorite</span>
+<p class="text-sm font-medium text-slate-900 dark:text-white">Weddings</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-200 dark:hover:bg-[#49223c]/50 cursor-pointer text-slate-600 dark:text-[#cb90b7] transition-colors">
+<span class="material-symbols-outlined text-[20px]">cake</span>
+<p class="text-sm font-medium text-slate-900 dark:text-white">Birthdays</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-200 dark:hover:bg-[#49223c]/50 cursor-pointer text-slate-600 dark:text-[#cb90b7] transition-colors">
+<span class="material-symbols-outlined text-[20px]">business_center</span>
+<p class="text-sm font-medium text-slate-900 dark:text-white">Corporate</p>
+</div>
+<div class="pt-4 pb-2 px-3">
+<p class="text-[10px] font-bold text-slate-400 dark:text-[#cb90b7]/50 uppercase tracking-widest">Format</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-200 dark:hover:bg-[#49223c]/50 cursor-pointer text-slate-600 dark:text-[#cb90b7] transition-colors">
+<span class="material-symbols-outlined text-[20px]">view_column</span>
+<p class="text-sm font-medium text-slate-900 dark:text-white">Strips (2x6)</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-200 dark:hover:bg-[#49223c]/50 cursor-pointer text-slate-600 dark:text-[#cb90b7] transition-colors">
+<span class="material-symbols-outlined text-[20px]">rectangle</span>
+<p class="text-sm font-medium text-slate-900 dark:text-white">Classic (4x6)</p>
+</div>
+</nav>
+<div class="p-4 border-t border-[#49223c]">
+<div class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary cursor-pointer">
+<span class="material-symbols-outlined">cloud_upload</span>
+<span class="text-sm font-bold">Storage: 84%</span>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col overflow-hidden">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between px-8 py-4 bg-background-light dark:bg-background-dark border-b border-[#49223c]">
+<div class="flex items-center gap-6 flex-1">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#cb90b7]">search</span>
+<input class="w-full bg-slate-100 dark:bg-[#49223c] border-none rounded-lg py-2 pl-10 pr-4 text-sm text-white placeholder-[#cb90b7] focus:ring-2 focus:ring-primary outline-none" placeholder="Search templates..." type="text"/>
+</div>
+<!-- Segmented Buttons -->
+<div class="flex bg-slate-100 dark:bg-[#49223c] p-1 rounded-lg h-9">
+<button class="px-3 flex items-center gap-2 rounded-md bg-white dark:bg-background-dark text-slate-900 dark:text-white shadow-sm">
+<span class="material-symbols-outlined text-sm">grid_view</span>
+<span class="text-xs font-semibold">Grid</span>
+</button>
+<button class="px-3 flex items-center gap-2 rounded-md text-slate-500 dark:text-[#cb90b7] hover:text-white">
+<span class="material-symbols-outlined text-sm">list</span>
+<span class="text-xs font-semibold">List</span>
+</button>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="bg-primary hover:bg-primary/90 text-white px-5 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-[20px]">add_box</span>
+                        Import Template
+                    </button>
+<div class="h-8 w-px bg-[#49223c] mx-2"></div>
+<button class="relative p-2 text-slate-500 dark:text-[#cb90b7] hover:bg-[#49223c] rounded-full transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-background-dark"></span>
+</button>
+<div class="w-10 h-10 rounded-full bg-cover bg-center border-2 border-primary/30" data-alt="User profile avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDa1grQQkpRrhPo4zbuoEHk_GADWCl7PxKgc_28SBXbtm9Vg09hcZemOkiRPQTNUvcRYPC-uSjercPMUV4WPIxUb8PSHH24NuJ-9alaKlunYkOMH3U84A_bQiq54rzEhCyT8EfOliYuIextEw6Qj8Ip8fq2cynYp9xu4RxAEM2G_3Z40P1N3Bk0QVxTMxUsWgIFpCRiVLEIQMUu07cVZ_Z86xINcFlU2yRbZcwimdbHgAMzRPoYJ2C4MEIiEPb8ELR4gVX7CIRQOxI")'></div>
+</div>
+</header>
+<!-- Library Content -->
+<div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+<div class="flex justify-between items-end mb-8">
+<div>
+<h2 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">All Templates</h2>
+<p class="text-slate-500 dark:text-[#cb90b7] mt-1">Browse and manage your 124 photobooth layouts</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-[#49223c] text-slate-900 dark:text-white rounded-lg text-sm font-medium hover:bg-slate-200 dark:hover:bg-[#5a2a4a] transition-colors">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+                            Filters
+                        </button>
+<button class="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-[#49223c] text-slate-900 dark:text-white rounded-lg text-sm font-medium hover:bg-slate-200 dark:hover:bg-[#5a2a4a] transition-colors">
+<span>Sort: Newest</span>
+<span class="material-symbols-outlined text-[18px]">expand_more</span>
+</button>
+</div>
+</div>
+<!-- Template Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+<!-- Template Card 1 -->
+<div class="group relative bg-slate-100 dark:bg-[#2d1525] rounded-xl overflow-hidden border border-transparent hover:border-primary/50 transition-all shadow-md">
+<div class="aspect-[3/4] overflow-hidden relative">
+<div class="w-full h-full bg-cover bg-center transition-transform duration-500 group-hover:scale-110" data-alt="Wedding floral template preview" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBBd3P1kEQ7cJ-qw8gMG7iMNq2vctYV66-qSK4guOKAtzY-P7fslRUzqCxYKbubqQvrRasT2dRavpHpSH80OwDOmMxOJQYoik8dInCDN38TbkB-OtiKoWA8UYugcTUBlx2D45-650FYDlDrDBrBlOEM599jQ1SGD-9o-X5AtFCN6eD3aHOIw5YL6z8fsU_ijxCR8xTbvfKl2I6jK2ffqNrMbgzhGV4_tohGfLBIQHTwe0javYB_Z0gAJZ4VZRh6mGVxtklxtu-2GTg")'></div>
+<!-- Hover Overlay -->
+<div class="absolute inset-0 bg-background-dark/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-3 p-4">
+<button class="w-full py-2.5 bg-primary text-white font-bold rounded-lg flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+                                    Select Template
+                                </button>
+<button class="w-full py-2.5 bg-white/10 text-white font-bold rounded-lg flex items-center justify-center gap-2 hover:bg-white/20 transition-colors border border-white/20">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+                                    Quick Edit
+                                </button>
+</div>
+<div class="absolute top-3 left-3 flex gap-2">
+<span class="bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Popular</span>
+<span class="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter">4x6</span>
+</div>
+</div>
+<div class="p-4 border-t border-[#49223c]">
+<h3 class="font-bold text-white text-sm truncate">Elegant Rose Wedding</h3>
+<p class="text-[11px] text-[#cb90b7] mt-0.5">Created 2 days ago</p>
+</div>
+</div>
+<!-- Template Card 2 -->
+<div class="group relative bg-slate-100 dark:bg-[#2d1525] rounded-xl overflow-hidden border border-transparent hover:border-primary/50 transition-all shadow-md">
+<div class="aspect-[3/4] overflow-hidden relative">
+<div class="w-full h-full bg-cover bg-center transition-transform duration-500 group-hover:scale-110" data-alt="Modern corporate strip template preview" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAkCH4HgdL2MnyIyKFTX_bQKeTePt3d_6abbfXp-7KDZk7lTo7iupmggIO_HZn2QpahXYdEvQsyYm1P29P-1AjhALz1qF_a51HmnPx1MvFAE9pDF7FfTRDbc1Y8rn0W9dflNsbpfZQsIJQZkiNyJILwvDcRjw7cQHWs_hBnrSr1o-xHc3018VULX0wQ9a40N951z1FMdCTlYare2RWputd0YseA3v6KZ_QNHO9rJ2pl7PfiFLCedQCZ-iqCkoQnZO5nMdu10tuSX-o")'></div>
+<!-- Hover Overlay -->
+<div class="absolute inset-0 bg-background-dark/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-3 p-4">
+<button class="w-full py-2.5 bg-primary text-white font-bold rounded-lg flex items-center justify-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+                                    Select Template
+                                </button>
+<button class="w-full py-2.5 bg-white/10 text-white font-bold rounded-lg flex items-center justify-center gap-2 transition-colors border border-white/20">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+                                    Quick Edit
+                                </button>
+</div>
+<div class="absolute top-3 left-3 flex gap-2">
+<span class="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter">2x6 Strip</span>
+</div>
+</div>
+<div class="p-4 border-t border-[#49223c]">
+<h3 class="font-bold text-white text-sm truncate">Tech Summit 2024</h3>
+<p class="text-[11px] text-[#cb90b7] mt-0.5">Created 5 days ago</p>
+</div>
+</div>
+<!-- Template Card 3 -->
+<div class="group relative bg-slate-100 dark:bg-[#2d1525] rounded-xl overflow-hidden border border-transparent hover:border-primary/50 transition-all shadow-md">
+<div class="aspect-[3/4] overflow-hidden relative">
+<div class="w-full h-full bg-cover bg-center transition-transform duration-500 group-hover:scale-110" data-alt="Retro birthday neon template preview" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDCpEZ4ybZU0GGkGvZL4PEOUEIO553JsrWXu6UdgFqggvw4mAQZ7DEqGPPRxV0ESMi1zuCeAFp44p4IYOV33P-4KDfSEY2m_XowrkHDHalWQB_D7kEKaifX7j4iDCZH1qRU-UsO4GxfksdPDxw_tIdzppzO4k8Km3m1fHymCYlPY73p3lgNrPaUqiQtJDO_tgx8t4wUmR5TdQqq4jgyek9w5ssYsrKfmlrymNvqepbzm8i2ZuoYPhFByUhstNLQ8kuv_TttyVsHVJE")'></div>
+<div class="absolute inset-0 bg-background-dark/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-3 p-4">
+<button class="w-full py-2.5 bg-primary text-white font-bold rounded-lg flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+                                    Select Template
+                                </button>
+<button class="w-full py-2.5 bg-white/10 text-white font-bold rounded-lg flex items-center justify-center gap-2 border border-white/20">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+                                    Quick Edit
+                                </button>
+</div>
+<div class="absolute top-3 left-3">
+<span class="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter">4x6</span>
+</div>
+</div>
+<div class="p-4 border-t border-[#49223c]">
+<h3 class="font-bold text-white text-sm truncate">Neon Party Nights</h3>
+<p class="text-[11px] text-[#cb90b7] mt-0.5">Modified yesterday</p>
+</div>
+</div>
+<!-- Template Card 4 -->
+<div class="group relative bg-slate-100 dark:bg-[#2d1525] rounded-xl overflow-hidden border border-transparent hover:border-primary/50 transition-all shadow-md">
+<div class="aspect-[3/4] overflow-hidden relative">
+<div class="w-full h-full bg-cover bg-center transition-transform duration-500 group-hover:scale-110" data-alt="Minimalist polaroid template preview" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBp1oH5NaG4oOFKqvlQVPb0VoMtFNvIVbEXENThyc1QCtlbSjezmA0CF-Q3kQNl8xxG8H6PoPCinQe8GLHBzfoGQQVvcEl6vK4pW37-QoHzAVVYc0T5inBxQ-HtnnBqTWIy7aZa8tedUhZ-0sAMYkAUlXx_HaTd-bnUKQ317YrpvxiKAABA6lQfnIgoYkFh3af8ARWTZ_0oIfLcT6HccnZknlt5G2QcqbKRvwm3DEAsEfm6RrMvkmJfzuwfG_hhErULhkizQOjYRIc")'></div>
+<div class="absolute inset-0 bg-background-dark/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-3 p-4">
+<button class="w-full py-2.5 bg-primary text-white font-bold rounded-lg flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+                                    Select Template
+                                </button>
+<button class="w-full py-2.5 bg-white/10 text-white font-bold rounded-lg flex items-center justify-center gap-2 border border-white/20">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+                                    Quick Edit
+                                </button>
+</div>
+<div class="absolute top-3 left-3 flex gap-2">
+<span class="bg-primary/40 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">New</span>
+<span class="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter">4x6</span>
+</div>
+</div>
+<div class="p-4 border-t border-[#49223c]">
+<h3 class="font-bold text-white text-sm truncate">Minimalist Polaroid</h3>
+<p class="text-[11px] text-[#cb90b7] mt-0.5">Created today</p>
+</div>
+</div>
+<!-- Template Card 5 -->
+<div class="group relative bg-slate-100 dark:bg-[#2d1525] rounded-xl overflow-hidden border border-transparent hover:border-primary/50 transition-all shadow-md">
+<div class="aspect-[3/4] overflow-hidden relative">
+<div class="w-full h-full bg-cover bg-center transition-transform duration-500 group-hover:scale-110" data-alt="Vintage black and white template preview" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBeSQAu9QPdOjABWgGluVu_qIuszwIHf4bfidXL0vnQbxhoZ3hAc1wVysx9z60WrMgdFoWHFD99xJkdSB2q4SFN_58V53vZEMJZL0pnwwW2afiw00v8M5qAWDxlG6t6DAWVV5zfwTe_QKOulagJt9otrVB9Ioxj7lJn-yFoD7DlR--TB8g9_TJNys3d-j4W_Ldvi2CFYrWnh9xxUhUa2Uw5oZihM5hcl3MGJxQFPJBDyqRNdxheiNEsKXO6663rjp5F5lIv5QzP37s")'></div>
+<div class="absolute inset-0 bg-background-dark/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-3 p-4">
+<button class="w-full py-2.5 bg-primary text-white font-bold rounded-lg flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+                                    Select Template
+                                </button>
+<button class="w-full py-2.5 bg-white/10 text-white font-bold rounded-lg flex items-center justify-center gap-2 border border-white/20">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+                                    Quick Edit
+                                </button>
+</div>
+<div class="absolute top-3 left-3">
+<span class="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter">2x6 Strip</span>
+</div>
+</div>
+<div class="p-4 border-t border-[#49223c]">
+<h3 class="font-bold text-white text-sm truncate">Vintage Noir</h3>
+<p class="text-[11px] text-[#cb90b7] mt-0.5">Created 2 weeks ago</p>
+</div>
+</div>
+<!-- Template Card 6 (Placeholder for Grid) -->
+<div class="group relative bg-slate-100 dark:bg-[#2d1525] rounded-xl overflow-hidden border border-transparent hover:border-primary/50 transition-all shadow-md">
+<div class="aspect-[3/4] overflow-hidden relative">
+<div class="w-full h-full bg-cover bg-center transition-transform duration-500 group-hover:scale-110" data-alt="Luxury gala template preview" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCF-x4dTj6IOCH_8DniI3yA8vPkMrYEwtZc_qkwWhvNWAQoIDZN1XwS3zwcPbk8SPbHzJ6GXTvlT7nZGH6dAEO6SON-KagdW7jflcb4HGmaM2GbOVX_CKgQUGsMOWwQhsSlATKpzD0M0yOYPIMGzG3YcpAP0jo0yybilEi2fZ7VlIKGBeIaE6kaW9oIVAcJe9mFzWUsi1r-Wyn4bQMLWiPj46Nud74-SvZeyhh-iEBgDHZ50B4ByG2wLryQuEJ0dvYsdgejc7tTmlw")'></div>
+<div class="absolute inset-0 bg-background-dark/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-3 p-4">
+<button class="w-full py-2.5 bg-primary text-white font-bold rounded-lg flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+                                    Select Template
+                                </button>
+<button class="w-full py-2.5 bg-white/10 text-white font-bold rounded-lg flex items-center justify-center gap-2 border border-white/20">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+                                    Quick Edit
+                                </button>
+</div>
+<div class="absolute top-3 left-3">
+<span class="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter">4x6</span>
+</div>
+</div>
+<div class="p-4 border-t border-[#49223c]">
+<h3 class="font-bold text-white text-sm truncate">Gold Glitz Gala</h3>
+<p class="text-[11px] text-[#cb90b7] mt-0.5">Created 1 month ago</p>
+</div>
+</div>
+</div>
+<!-- Pagination/Load More (Extra Component) -->
+<div class="mt-12 flex justify-center pb-8">
+<button class="px-8 py-3 bg-transparent border-2 border-[#49223c] text-white rounded-xl font-bold hover:bg-[#49223c] transition-all flex items-center gap-2 group">
+                        Load More Templates
+                        <span class="material-symbols-outlined group-hover:translate-y-1 transition-transform">expand_more</span>
+</button>
+</div>
+</div>
+</main>
+</div>
+</body></html>
