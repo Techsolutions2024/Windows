@@ -1,18 +1,24 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import api, { Event as ApiEvent } from '../services/api';
-import CreateEventModal from '../components/CreateEventModal';
+import { motion, AnimatePresence } from 'framer-motion';
+import api, { Event } from '../services/api';
+import EventModal from '../components/CreateEventModal'; // We renamed the component content, but filename is still CreateEventModal for now.
 
 // Extend ApiEvent to include UI-specific state
-interface Event extends ApiEvent {
-  selected?: boolean;
+// interface Event extends ApiEvent {
+//   selected?: boolean;
+// }
+
+interface EventCardProps {
+  event: Event;
+  isSelected: boolean;
+  onClick: () => void;
 }
 
 export default function EventsPage() {
   const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [sortBy, setSortBy] = useState('createdAt');
@@ -20,20 +26,27 @@ export default function EventsPage() {
   const [filterTime, setFilterTime] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [eventToEdit, setEventToEdit] = useState<{ name: string; location: string; date: string; id: number } | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
+
 
   // Fetch events
   const fetchEvents = async () => {
-    setLoading(true);
+    setIsLoading(true);
     try {
       const response = searchQuery
         ? await api.searchEvents(searchQuery)
         : await api.getEvents({ sortBy, order: sortOrder });
 
       if (response.success && response.data) {
+        // The original code mapped events to add 'selected' property.
+        // The new code snippet implies 'selected' is no longer part of the Event interface or state management.
+        // For now, I'll keep the original 'selected' logic to avoid breaking other parts of the UI that rely on it,
+        // but will use the new `selectedEventId` for single selection logic as per the instruction.
         const mappedEvents = response.data.map(e => ({
           ...e,
-          selected: false
+          selected: e.id === selectedEventId // Re-apply selection if an event was selected
         }));
         setEvents(mappedEvents);
       } else {
@@ -43,59 +56,73 @@ export default function EventsPage() {
       setError('An unexpected error occurred');
       console.error(err);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
     fetchEvents();
-  }, [sortBy, sortOrder, searchQuery]); // Refetch when these change
+  }, [sortBy, sortOrder, searchQuery, selectedEventId]); // Refetch when these change, and also when selectedEventId changes to update 'selected' state
 
   const handleSelectAll = () => {
     const allSelected = events.every(e => e.selected);
     setEvents(events.map((e) => ({ ...e, selected: !allSelected })));
+    setSelectedEventId(null); // Clear single selection if multi-select is used
   };
 
   const handleToggleSelect = (id: number) => {
     setEvents(events.map((e) => (e.id === id ? { ...e, selected: !e.selected } : e)));
-  };
-
-  const handleOpenCreateModal = () => {
-    setShowCreateModal(true);
-  };
-
-  const handleCreateSubmit = async (name: string, location: string, date: string) => {
-    try {
-      const response = await api.createEvent(name, location, date);
-      if (response.success) {
-        fetchEvents();
-      } else {
-        alert(response.error || "Không thể tạo sự kiện");
-      }
-    } catch (error) {
-      console.error(error);
-      alert("Lỗi khi tạo sự kiện");
+    // Update selectedEventId for single selection logic
+    if (selectedEventId === id) {
+      setSelectedEventId(null);
+    } else {
+      setSelectedEventId(id);
     }
   };
 
-  const handleRenameEvent = async () => {
-    const selectedEvent = events.find(e => e.selected);
+  const handleCreateEvent = () => {
+    setEventToEdit(null);
+    setIsModalOpen(true);
+  };
+
+  const handleModalSubmit = async (name: string, location: string, date: string) => {
+    try {
+      if (eventToEdit) {
+        // Update existing event
+        const response = await api.updateEvent(eventToEdit.id, name, location, date);
+        if (response.success) {
+          fetchEvents();
+          setIsModalOpen(false);
+        } else {
+          alert(response.error || "Không thể cập nhật sự kiện");
+        }
+      } else {
+        // Create new event
+        const response = await api.createEvent(name, location, date);
+        if (response.success) {
+          fetchEvents();
+          setIsModalOpen(false);
+        } else {
+          alert(response.error || "Không thể tạo sự kiện");
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Lỗi khi lưu sự kiện");
+    }
+  };
+
+  const handleRenameEvent = () => {
+    const selectedEvent = events.find((e) => e.id === selectedEventId);
     if (!selectedEvent) return;
 
-    const newName = window.prompt("Nhập tên mới:", selectedEvent.name);
-    if (!newName || newName === selectedEvent.name) return;
-
-    try {
-      const response = await api.updateEvent(selectedEvent.id, newName, selectedEvent.location, selectedEvent.eventDate);
-      if (response.success) {
-        fetchEvents();
-      } else {
-        alert(response.error || "Không thể đổi tên sự kiện");
-      }
-    } catch (error) {
-      console.error(error);
-      alert("Lỗi khi đổi tên sự kiện");
-    }
+    setEventToEdit({
+      id: selectedEvent.id,
+      name: selectedEvent.name,
+      location: selectedEvent.location || "",
+      date: selectedEvent.eventDate || ""
+    });
+    setIsModalOpen(true);
   };
 
   const handleDeleteEvent = async () => {

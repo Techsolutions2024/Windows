@@ -1,25 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-interface CreateEventModalProps {
+interface EventModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (name: string, location: string, date: string) => void;
+    initialData?: {
+        name: string;
+        location: string;
+        date: string;
+    } | null;
 }
 
-export default function CreateEventModal({ isOpen, onClose, onSubmit }: CreateEventModalProps) {
+export default function EventModal({ isOpen, onClose, onSubmit, initialData }: EventModalProps) {
     const [name, setName] = useState('');
     const [location, setLocation] = useState('');
     const [date, setDate] = useState('');
 
-    // Reset form when opening
     useEffect(() => {
         if (isOpen) {
-            setName('');
-            setLocation('');
-            setDate(new Date().toISOString().slice(0, 16)); // Default to now
+            if (initialData) {
+                setName(initialData.name);
+                setLocation(initialData.location);
+                // Ensure date format fits input type="datetime-local" if necessary, 
+                // but assuming initialData.date is compatible or handled.
+                // Standardizing to ISO substring for datetime-local input: YYYY-MM-DDTHH:mm
+                const formattedDate = initialData.date
+                    ? (initialData.date.length > 16 ? initialData.date.slice(0, 16) : initialData.date)
+                    : new Date().toISOString().slice(0, 16);
+                setDate(formattedDate);
+            } else {
+                setName('');
+                setLocation('');
+                setDate(new Date().toISOString().slice(0, 16));
+            }
         }
-    }, [isOpen]);
+    }, [isOpen, initialData]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -27,6 +43,8 @@ export default function CreateEventModal({ isOpen, onClose, onSubmit }: CreateEv
         onSubmit(name, location, date);
         onClose();
     };
+
+    const isEditMode = !!initialData;
 
     return (
         <AnimatePresence>
@@ -49,7 +67,9 @@ export default function CreateEventModal({ isOpen, onClose, onSubmit }: CreateEv
                         className="relative bg-[#1A1A1A] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden"
                     >
                         <div className="p-6">
-                            <h2 className="text-xl font-bold text-white mb-6">Tạo sự kiện mới</h2>
+                            <h2 className="text-xl font-bold text-white mb-6">
+                                {isEditMode ? 'Cập nhật sự kiện' : 'Tạo sự kiện mới'}
+                            </h2>
 
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <div>
@@ -110,7 +130,7 @@ export default function CreateEventModal({ isOpen, onClose, onSubmit }: CreateEv
                                         type="submit"
                                         className="flex-1 bg-primary hover:bg-primary-600 text-white font-bold py-2.5 rounded-lg transition-colors shadow-lg shadow-primary/20"
                                     >
-                                        Tạo sự kiện
+                                        {isEditMode ? 'Lưu thay đổi' : 'Tạo sự kiện'}
                                     </button>
                                 </div>
                             </form>
