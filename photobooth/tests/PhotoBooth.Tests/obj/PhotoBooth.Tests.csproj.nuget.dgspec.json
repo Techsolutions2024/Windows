@@ -1,0 +1,166 @@
+{
+  "format": 1,
+  "restore": {
+    "/vercel/sandbox/photobooth/tests/PhotoBooth.Tests/PhotoBooth.Tests.csproj": {}
+  },
+  "projects": {
+    "/vercel/sandbox/photobooth/src/PhotoBooth.Core/PhotoBooth.Core.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/vercel/sandbox/photobooth/src/PhotoBooth.Core/PhotoBooth.Core.csproj",
+        "projectName": "PhotoBooth.Core",
+        "projectPath": "/vercel/sandbox/photobooth/src/PhotoBooth.Core/PhotoBooth.Core.csproj",
+        "packagesPath": "/home/vercel-sandbox/.nuget/packages/",
+        "outputPath": "/vercel/sandbox/photobooth/src/PhotoBooth.Core/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/vercel-sandbox/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.Extensions.Configuration.Abstractions": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "Microsoft.Extensions.DependencyInjection.Abstractions": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "SixLabors.ImageSharp": {
+              "target": "Package",
+              "version": "[3.1.7, )"
+            },
+            "SixLabors.ImageSharp.Drawing": {
+              "target": "Package",
+              "version": "[2.1.3, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/lib64/dotnet/sdk/8.0.121/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/vercel/sandbox/photobooth/tests/PhotoBooth.Tests/PhotoBooth.Tests.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/vercel/sandbox/photobooth/tests/PhotoBooth.Tests/PhotoBooth.Tests.csproj",
+        "projectName": "PhotoBooth.Tests",
+        "projectPath": "/vercel/sandbox/photobooth/tests/PhotoBooth.Tests/PhotoBooth.Tests.csproj",
+        "packagesPath": "/home/vercel-sandbox/.nuget/packages/",
+        "outputPath": "/vercel/sandbox/photobooth/tests/PhotoBooth.Tests/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/vercel-sandbox/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "/vercel/sandbox/photobooth/src/PhotoBooth.Core/PhotoBooth.Core.csproj": {
+                "projectPath": "/vercel/sandbox/photobooth/src/PhotoBooth.Core/PhotoBooth.Core.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.NET.Test.Sdk": {
+              "target": "Package",
+              "version": "[17.6.0, )"
+            },
+            "SixLabors.ImageSharp": {
+              "target": "Package",
+              "version": "[3.1.7, )"
+            },
+            "SixLabors.ImageSharp.Drawing": {
+              "target": "Package",
+              "version": "[2.1.3, )"
+            },
+            "coverlet.collector": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[6.0.0, )"
+            },
+            "xunit": {
+              "target": "Package",
+              "version": "[2.4.2, )"
+            },
+            "xunit.runner.visualstudio": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[2.4.5, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/lib64/dotnet/sdk/8.0.121/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

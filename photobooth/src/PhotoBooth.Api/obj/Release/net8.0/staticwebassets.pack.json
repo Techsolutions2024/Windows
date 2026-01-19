@@ -1,0 +1,25 @@
+{
+  "Files": [
+    {
+      "Id": "/vercel/sandbox/photobooth/src/PhotoBooth.Api/wwwroot/index.html",
+      "PackagePath": "staticwebassets/index.html"
+    },
+    {
+      "Id": "obj/Release/net8.0/staticwebassets/msbuild.PhotoBooth.Api.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj/Release/net8.0/staticwebassets/msbuild.build.PhotoBooth.Api.props",
+      "PackagePath": "build\\PhotoBooth.Api.props"
+    },
+    {
+      "Id": "obj/Release/net8.0/staticwebassets/msbuild.buildMultiTargeting.PhotoBooth.Api.props",
+      "PackagePath": "buildMultiTargeting\\PhotoBooth.Api.props"
+    },
+    {
+      "Id": "obj/Release/net8.0/staticwebassets/msbuild.buildTransitive.PhotoBooth.Api.props",
+      "PackagePath": "buildTransitive\\PhotoBooth.Api.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

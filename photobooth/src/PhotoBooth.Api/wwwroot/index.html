@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PhotoBooth Kiosk</title>
+    <style>
+      :root {
+        --bg: #0b0e14;
+        --card: #151b26;
+        --text: #e8eefc;
+        --muted: #97a7c7;
+        --accent: #4da3ff;
+        --danger: #ff4d4d;
+      }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+          Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        background: var(--bg);
+        color: var(--text);
+      }
+      header {
+        padding: 18px 22px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      header h1 {
+        margin: 0;
+        font-size: 18px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      main {
+        padding: 22px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        padding: 16px;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      button {
+        appearance: none;
+        border: 0;
+        border-radius: 12px;
+        padding: 12px 14px;
+        cursor: pointer;
+        font-weight: 700;
+        background: var(--accent);
+        color: #08111f;
+      }
+      button.secondary {
+        background: rgba(255, 255, 255, 0.12);
+        color: var(--text);
+      }
+      button.danger {
+        background: var(--danger);
+        color: white;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .kv {
+        display: grid;
+        grid-template-columns: 140px 1fr;
+        gap: 8px;
+        font-size: 14px;
+      }
+      .kv div:nth-child(odd) {
+        color: var(--muted);
+      }
+      .preview img {
+        max-width: 100%;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .log {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+        color: var(--muted);
+        white-space: pre-wrap;
+      }
+      @media (max-width: 900px) {
+        main {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>PhotoBooth (prototype)</h1>
+      <div id="health">...</div>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2 style="margin: 0 0 10px 0">Phiên chụp</h2>
+        <div class="kv">
+          <div>Session</div>
+          <div id="sessionId">(none)</div>
+          <div>Status</div>
+          <div id="sessionStatus">-</div>
+          <div>Photos</div>
+          <div id="sessionPhotos">0</div>
+          <div>Render</div>
+          <div id="sessionRender">-</div>
+          <div>Print</div>
+          <div id="sessionPrint">-</div>
+        </div>
+        <div style="height: 14px"></div>
+        <div class="actions">
+          <button id="btnNew">New session</button>
+          <button id="btnCapture" class="secondary" disabled>Capture</button>
+          <button id="btnRender" class="secondary" disabled>Render</button>
+          <button id="btnPrint" class="secondary" disabled>Print</button>
+        </div>
+        <div style="height: 12px"></div>
+        <div class="log" id="log"></div>
+      </section>
+
+      <section class="card preview">
+        <h2 style="margin: 0 0 10px 0">Preview</h2>
+        <div id="previewWrap" style="display: grid; gap: 10px"></div>
+      </section>
+    </main>
+
+    <script>
+      const api = "";
+      let session = null;
+
+      const el = (id) => document.getElementById(id);
+      const log = (msg) => {
+        el("log").textContent = `[${new Date().toISOString()}] ${msg}\n` + el("log").textContent;
+      };
+
+      async function refreshHealth() {
+        try {
+          const r = await fetch(`${api}/api/health`);
+          const j = await r.json();
+          el("health").textContent = j.ok ? "API OK" : "API ?";
+        } catch (e) {
+          el("health").textContent = "API DOWN";
+        }
+      }
+
+      function updateUi() {
+        el("sessionId").textContent = session?.id ?? "(none)";
+        el("sessionStatus").textContent = session?.status ?? "-";
+        el("sessionPhotos").textContent = session?.photos?.length ?? 0;
+        el("sessionRender").textContent = session?.render?.fileName ?? "-";
+        el("sessionPrint").textContent = session?.printJob?.fileName ?? "-";
+
+        el("btnCapture").disabled = !session;
+        el("btnRender").disabled = !session || (session.photos?.length ?? 0) === 0;
+        el("btnPrint").disabled = !session || !session.render;
+
+        const wrap = el("previewWrap");
+        wrap.innerHTML = "";
+
+        if (session?.photos?.length) {
+          for (const p of session.photos) {
+            const img = document.createElement("img");
+            img.src = `${api}/api/sessions/${session.id}/files/${p.fileName}`;
+            img.alt = p.fileName;
+            wrap.appendChild(img);
+          }
+        }
+
+        if (session?.render) {
+          const img = document.createElement("img");
+          img.src = `${api}/api/sessions/${session.id}/files/${session.render.fileName}`;
+          img.alt = session.render.fileName;
+          wrap.appendChild(img);
+        }
+      }
+
+      async function fetchSession() {
+        if (!session?.id) return;
+        const r = await fetch(`${api}/api/sessions/${session.id}`);
+        session = await r.json();
+        updateUi();
+      }
+
+      el("btnNew").addEventListener("click", async () => {
+        const r = await fetch(`${api}/api/sessions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ templateId: "basic-2x2" }),
+        });
+        session = await r.json();
+        log(`Created session ${session.id}`);
+        updateUi();
+      });
+
+      el("btnCapture").addEventListener("click", async () => {
+        if (!session?.id) return;
+        log("Capturing...");
+        const r = await fetch(`${api}/api/sessions/${session.id}/capture`, { method: "POST" });
+        if (!r.ok) {
+          log(`Capture failed (${r.status})`);
+        }
+        await fetchSession();
+      });
+
+      el("btnRender").addEventListener("click", async () => {
+        if (!session?.id) return;
+        log("Rendering...");
+        const r = await fetch(`${api}/api/sessions/${session.id}/render`, { method: "POST" });
+        if (!r.ok) {
+          log(`Render failed (${r.status})`);
+        }
+        await fetchSession();
+      });
+
+      el("btnPrint").addEventListener("click", async () => {
+        if (!session?.id) return;
+        log("Printing (file output)...");
+        const r = await fetch(`${api}/api/sessions/${session.id}/print`, { method: "POST" });
+        if (!r.ok) {
+          log(`Print failed (${r.status})`);
+        }
+        await fetchSession();
+      });
+
+      refreshHealth();
+      setInterval(refreshHealth, 3000);
+    </script>
+  </body>
+</html>
+
