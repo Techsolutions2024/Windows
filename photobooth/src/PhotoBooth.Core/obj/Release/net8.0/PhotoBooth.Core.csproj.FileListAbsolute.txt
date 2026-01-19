@@ -1,0 +1,13 @@
+/vercel/sandbox/photobooth/src/PhotoBooth.Core/obj/Release/net8.0/PhotoBooth.Core.csproj.AssemblyReference.cache
+/vercel/sandbox/photobooth/src/PhotoBooth.Core/obj/Release/net8.0/PhotoBooth.Core.GeneratedMSBuildEditorConfig.editorconfig
+/vercel/sandbox/photobooth/src/PhotoBooth.Core/obj/Release/net8.0/PhotoBooth.Core.AssemblyInfoInputs.cache
+/vercel/sandbox/photobooth/src/PhotoBooth.Core/obj/Release/net8.0/PhotoBooth.Core.AssemblyInfo.cs
+/vercel/sandbox/photobooth/src/PhotoBooth.Core/obj/Release/net8.0/PhotoBooth.Core.csproj.CoreCompileInputs.cache
+/vercel/sandbox/photobooth/src/PhotoBooth.Core/obj/Release/net8.0/PhotoBooth.Core.sourcelink.json
+/vercel/sandbox/photobooth/src/PhotoBooth.Core/bin/Release/net8.0/PhotoBooth.Core.deps.json
+/vercel/sandbox/photobooth/src/PhotoBooth.Core/bin/Release/net8.0/PhotoBooth.Core.dll
+/vercel/sandbox/photobooth/src/PhotoBooth.Core/bin/Release/net8.0/PhotoBooth.Core.pdb
+/vercel/sandbox/photobooth/src/PhotoBooth.Core/obj/Release/net8.0/PhotoBooth.Core.dll
+/vercel/sandbox/photobooth/src/PhotoBooth.Core/obj/Release/net8.0/refint/PhotoBooth.Core.dll
+/vercel/sandbox/photobooth/src/PhotoBooth.Core/obj/Release/net8.0/PhotoBooth.Core.pdb
+/vercel/sandbox/photobooth/src/PhotoBooth.Core/obj/Release/net8.0/ref/PhotoBooth.Core.dll
