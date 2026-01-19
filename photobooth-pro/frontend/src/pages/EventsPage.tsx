@@ -341,12 +341,24 @@ export default function EventsPage() {
                   </div>
 
                   {/* Event Info */}
-                  <div className="text-center pb-2">
-                    <p className="text-sm font-medium text-white truncate px-2" title={event.name}>
+                  <div className="text-center pb-2 px-2">
+                    <p className="text-sm font-medium text-white truncate mb-1" title={event.name}>
                       {event.name}
                     </p>
-                    <p className="text-xs text-white/40 mt-1">
-                      {new Date(event.createdAt).toLocaleDateString('vi-VN')}
+                    {event.location && (
+                      <p className="text-xs text-white/60 truncate flex items-center justify-center gap-1 mb-0.5" title={event.location}>
+                        <span className="material-symbols-outlined text-[10px]">location_on</span>
+                        {event.location}
+                      </p>
+                    )}
+                    {event.eventDate && (
+                      <p className="text-xs text-white/60 truncate flex items-center justify-center gap-1 mb-0.5">
+                        <span className="material-symbols-outlined text-[10px]">calendar_today</span>
+                        {new Date(event.eventDate).toLocaleDateString('vi-VN')}
+                      </p>
+                    )}
+                    <p className="text-[10px] text-white/30 mt-1">
+                      Tạo: {new Date(event.createdAt).toLocaleDateString('vi-VN')}
                     </p>
                   </div>
                 </motion.div>
