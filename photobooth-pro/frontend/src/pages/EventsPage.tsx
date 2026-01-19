@@ -190,10 +190,11 @@ export default function EventsPage() {
 
   return (
     <div className="min-h-screen bg-background-dark text-white flex flex-col">
-      <CreateEventModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSubmit={handleCreateSubmit}
+      <EventModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleModalSubmit}
+        initialData={eventToEdit}
       />
 
       {/* Top Toolbar */}
