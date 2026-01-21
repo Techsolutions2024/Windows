@@ -44,6 +44,18 @@ export interface AppSettings {
   autoPrint: boolean
   printCopies: number
   screenOrientation: 'landscape' | 'portrait'
+  photoInterval: number
+  layout: {
+    selectedLayoutId: string | null
+    layouts: Layout[]
+  }
+}
+
+export interface Layout {
+  id: string
+  name: string
+  path: string
+  photoCount: number
 }
 
 export interface FilterType {

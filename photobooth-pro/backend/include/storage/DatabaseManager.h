@@ -5,7 +5,6 @@
 #include <string>
 #include <vector>
 
-
 namespace photobooth {
 
 struct EventConfig {
@@ -21,6 +20,7 @@ struct EventConfig {
   std::string beautyFilterConfig; // JSON string
   std::string watermarkConfig;    // JSON string
   std::string postProcessConfig;  // JSON string
+  std::string cameraSettings;     // JSON string
   int countdownSeconds;
   int photoCount;             // Number of photos per session
   std::string layoutTemplate; // Layout template name

@@ -232,7 +232,7 @@ export default function EventsPage() {
               Nhân bản
             </button>
             <button
-              onClick={handleOpenCreateModal}
+              onClick={handleCreateEvent}
               className={buttonPrimaryClass}
             >
               <span className="material-symbols-outlined text-sm">add</span>
@@ -311,7 +311,7 @@ export default function EventsPage() {
       <div className="flex-1 flex overflow-hidden">
         {/* Events Grid - Scrollable */}
         <main className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent hover:scrollbar-thumb-white/30">
-          {loading ? (
+          {isLoading ? (
             <div className="flex items-center justify-center h-full">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
             </div>

@@ -1,12 +1,31 @@
+import { useState, useEffect } from 'react'
 import { useAppStore } from '../store/useAppStore'
 
 export default function CameraSettings() {
   const { settings, updateSettings } = useAppStore()
 
-  const isoOptions = [100, 200, 400, 800, 1600, 3200, 6400]
-  const apertureOptions = ['f/1.4', 'f/2.0', 'f/2.8', 'f/4.0', 'f/5.6', 'f/8.0', 'f/11', 'f/16']
-  const shutterSpeedOptions = ['1/4000', '1/2000', '1/1000', '1/500', '1/250', '1/125', '1/60', '1/30']
-  const whiteBalanceOptions = ['Auto', 'Daylight', 'Cloudy', 'Tungsten', 'Fluorescent', 'Flash']
+  const [isoOptions, setIsoOptions] = useState<number[]>([100, 200, 400, 800, 1600, 3200, 6400])
+  const [apertureOptions, setApertureOptions] = useState<string[]>(['f/1.4', 'f/2.0', 'f/2.8', 'f/4.0', 'f/5.6', 'f/8.0', 'f/11', 'f/16'])
+  const [shutterSpeedOptions, setShutterSpeedOptions] = useState<string[]>(['1/4000', '1/2000', '1/1000', '1/500', '1/250', '1/125', '1/60', '1/30'])
+  const [whiteBalanceOptions, setWhiteBalanceOptions] = useState<string[]>(['Auto', 'Daylight', 'Cloudy', 'Tungsten', 'Fluorescent', 'Flash'])
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/api/cameras/settings');
+        const data = await response.json();
+        if (data.success && data.data) {
+          if (data.data.supportedISO && data.data.supportedISO.length > 0) setIsoOptions(data.data.supportedISO);
+          if (data.data.supportedAperture && data.data.supportedAperture.length > 0) setApertureOptions(data.data.supportedAperture);
+          if (data.data.supportedShutterSpeed && data.data.supportedShutterSpeed.length > 0) setShutterSpeedOptions(data.data.supportedShutterSpeed);
+          if (data.data.supportedWhiteBalance && data.data.supportedWhiteBalance.length > 0) setWhiteBalanceOptions(data.data.supportedWhiteBalance);
+        }
+      } catch (error) {
+        console.error("Failed to fetch camera settings", error);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   return (
     <div className="p-6 space-y-6">
@@ -101,14 +120,12 @@ export default function CameraSettings() {
               cameraSettings: { ...settings.cameraSettings, mirror: !settings.cameraSettings.mirror },
             })
           }
-          className={`relative w-12 h-6 rounded-full transition ${
-            settings.cameraSettings.mirror ? 'bg-primary' : 'bg-gray-600'
-          }`}
+          className={`relative w-12 h-6 rounded-full transition ${settings.cameraSettings.mirror ? 'bg-primary' : 'bg-gray-600'
+            }`}
         >
           <div
-            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-              settings.cameraSettings.mirror ? 'translate-x-6' : 'translate-x-0'
-            }`}
+            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${settings.cameraSettings.mirror ? 'translate-x-6' : 'translate-x-0'
+              }`}
           />
         </button>
       </div>
@@ -125,11 +142,10 @@ export default function CameraSettings() {
                   cameraSettings: { ...settings.cameraSettings, rotation: rotation as 0 | 90 | 180 | 270 },
                 })
               }
-              className={`px-3 py-2 rounded-lg transition ${
-                settings.cameraSettings.rotation === rotation
-                  ? 'bg-primary text-white'
-                  : 'bg-dark-lighter hover:bg-gray-600'
-              }`}
+              className={`px-3 py-2 rounded-lg transition ${settings.cameraSettings.rotation === rotation
+                ? 'bg-primary text-white'
+                : 'bg-dark-lighter hover:bg-gray-600'
+                }`}
             >
               {rotation}°
             </button>
@@ -142,14 +158,12 @@ export default function CameraSettings() {
         <label className="text-sm font-medium">Auto Preview</label>
         <button
           onClick={() => updateSettings({ autoPreview: !settings.autoPreview })}
-          className={`relative w-12 h-6 rounded-full transition ${
-            settings.autoPreview ? 'bg-primary' : 'bg-gray-600'
-          }`}
+          className={`relative w-12 h-6 rounded-full transition ${settings.autoPreview ? 'bg-primary' : 'bg-gray-600'
+            }`}
         >
           <div
-            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-              settings.autoPreview ? 'translate-x-6' : 'translate-x-0'
-            }`}
+            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${settings.autoPreview ? 'translate-x-6' : 'translate-x-0'
+              }`}
           />
         </button>
       </div>
@@ -159,32 +173,32 @@ export default function CameraSettings() {
         <label className="text-sm font-medium">Auto Print</label>
         <button
           onClick={() => updateSettings({ autoPrint: !settings.autoPrint })}
-          className={`relative w-12 h-6 rounded-full transition ${
-            settings.autoPrint ? 'bg-primary' : 'bg-gray-600'
-          }`}
+          className={`relative w-12 h-6 rounded-full transition ${settings.autoPrint ? 'bg-primary' : 'bg-gray-600'
+            }`}
         >
           <div
-            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-              settings.autoPrint ? 'translate-x-6' : 'translate-x-0'
-            }`}
+            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${settings.autoPrint ? 'translate-x-6' : 'translate-x-0'
+              }`}
           />
         </button>
       </div>
 
       {/* Print Copies */}
-      {settings.autoPrint && (
-        <div>
-          <label className="block text-sm font-medium mb-2">Print Copies</label>
-          <input
-            type="number"
-            min="1"
-            max="10"
-            value={settings.printCopies}
-            onChange={(e) => updateSettings({ printCopies: parseInt(e.target.value) })}
-            className="w-full px-3 py-2 bg-dark-lighter rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-        </div>
-      )}
-    </div>
+      {
+        settings.autoPrint && (
+          <div>
+            <label className="block text-sm font-medium mb-2">Print Copies</label>
+            <input
+              type="number"
+              min="1"
+              max="10"
+              value={settings.printCopies}
+              onChange={(e) => updateSettings({ printCopies: parseInt(e.target.value) })}
+              className="w-full px-3 py-2 bg-dark-lighter rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+        )
+      }
+    </div >
   )
 }

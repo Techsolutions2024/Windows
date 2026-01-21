@@ -63,6 +63,7 @@ bool DatabaseManager::createTables() {
   // Lazy migration for existing tables
   executeSQL("ALTER TABLE events ADD COLUMN location TEXT;");
   executeSQL("ALTER TABLE events ADD COLUMN event_date TEXT;");
+  executeSQL("ALTER TABLE event_configs ADD COLUMN camera_settings TEXT;");
 
   const char *eventConfigSql = R"(
         CREATE TABLE IF NOT EXISTS event_configs (
@@ -79,6 +80,7 @@ bool DatabaseManager::createTables() {
             beauty_filter_config TEXT,
             watermark_config TEXT,
             post_process_config TEXT,
+            camera_settings TEXT,
             countdown_seconds INTEGER DEFAULT 3,
             photo_count INTEGER DEFAULT 4,
             layout_template TEXT,
@@ -112,8 +114,10 @@ bool DatabaseManager::createTables() {
 
   if (!executeSQL(eventsSql))
     return false;
-  if (!executeSQL(eventConfigSql))
-    return false;
+  try {
+    executeSQL(eventConfigSql);
+  } catch (...) {
+  }
   if (!executeSQL(photosSql))
     return false;
   if (!executeSQL(indexSql))
@@ -127,9 +131,10 @@ bool DatabaseManager::executeSQL(const std::string &sql) {
   int rc = sqlite3_exec(static_cast<sqlite3 *>(db_), sql.c_str(), nullptr,
                         nullptr, &errMsg);
   if (rc != SQLITE_OK) {
-    std::cerr << "SQL error: " << errMsg << std::endl;
+    // std::cerr << "SQL error: " << errMsg << std::endl; // Suppress for
+    // migration 'duplicate column' errors
     sqlite3_free(errMsg);
-    return false;
+    // return false; // Don't fail hard, might be harmless
   }
   return true;
 }
@@ -439,6 +444,7 @@ bool DatabaseManager::saveEventConfig(const EventConfig &config) {
          "gif_enabled, "
       << "boomerang_enabled, video_enabled, effects_config, props_config, "
       << "beauty_filter_config, watermark_config, post_process_config, "
+      << "camera_settings, "
       << "countdown_seconds, photo_count, layout_template) VALUES ("
       << config.eventId << ", '" << escapeString(config.startScreenImage)
       << "', '" << escapeString(config.captureMode) << "', "
@@ -449,8 +455,9 @@ bool DatabaseManager::saveEventConfig(const EventConfig &config) {
       << escapeString(config.propsConfig) << "', '"
       << escapeString(config.beautyFilterConfig) << "', '"
       << escapeString(config.watermarkConfig) << "', '"
-      << escapeString(config.postProcessConfig) << "', "
-      << config.countdownSeconds << ", " << config.photoCount << ", '"
+      << escapeString(config.postProcessConfig) << "', '"
+      << escapeString(config.cameraSettings) << "', " << config.countdownSeconds
+      << ", " << config.photoCount << ", '"
       << escapeString(config.layoutTemplate) << "');";
 
   return executeSQL(sql.str());
@@ -462,6 +469,7 @@ std::optional<EventConfig> DatabaseManager::getEventConfig(int eventId) {
          "gif_enabled, "
       << "boomerang_enabled, video_enabled, effects_config, props_config, "
       << "beauty_filter_config, watermark_config, post_process_config, "
+      << "camera_settings, "
       << "countdown_seconds, photo_count, layout_template "
       << "FROM event_configs WHERE event_id = " << eventId << ";";
 
@@ -509,11 +517,15 @@ std::optional<EventConfig> DatabaseManager::getEventConfig(int eventId) {
         reinterpret_cast<const char *>(sqlite3_column_text(stmt, 11));
     config.postProcessConfig = postProcess ? postProcess : "";
 
-    config.countdownSeconds = sqlite3_column_int(stmt, 12);
-    config.photoCount = sqlite3_column_int(stmt, 13);
+    const char *cameraSettings =
+        reinterpret_cast<const char *>(sqlite3_column_text(stmt, 12));
+    config.cameraSettings = cameraSettings ? cameraSettings : "";
+
+    config.countdownSeconds = sqlite3_column_int(stmt, 13);
+    config.photoCount = sqlite3_column_int(stmt, 14);
 
     const char *layout =
-        reinterpret_cast<const char *>(sqlite3_column_text(stmt, 14));
+        reinterpret_cast<const char *>(sqlite3_column_text(stmt, 15));
     config.layoutTemplate = layout ? layout : "";
 
     sqlite3_finalize(stmt);

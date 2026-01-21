@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Camera, Monitor, Printer, Wifi, Database, Info } from 'lucide-react'
+import { ArrowLeft, Camera, Monitor, Printer, Wifi, Database, Info, Timer, Image as ImageIcon } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
+import CameraSettings from '../components/CameraSettings'
+import CaptureSettings from '../components/CaptureSettings'
+import LayoutSettings from '../components/LayoutSettings'
 
 export default function SettingsPage() {
   const navigate = useNavigate()
@@ -10,6 +13,8 @@ export default function SettingsPage() {
 
   const tabs = [
     { id: 'camera', name: 'Camera', icon: Camera },
+    { id: 'capture', name: 'Capture', icon: Timer },
+    { id: 'layout', name: 'Layout', icon: ImageIcon },
     { id: 'display', name: 'Display', icon: Monitor },
     { id: 'print', name: 'Print', icon: Printer },
     { id: 'network', name: 'Network', icon: Wifi },
@@ -43,11 +48,10 @@ export default function SettingsPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-                    activeTab === tab.id
-                      ? 'bg-primary text-white'
-                      : 'hover:bg-dark-lighter text-gray-300'
-                  }`}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeTab === tab.id
+                    ? 'bg-primary text-white'
+                    : 'hover:bg-dark-lighter text-gray-300'
+                    }`}
                 >
                   <Icon className="w-5 h-5" />
                   <span>{tab.name}</span>
@@ -81,30 +85,12 @@ export default function SettingsPage() {
               </div>
 
               {/* Default Settings */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Default Camera Settings</h3>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm mb-2">Default ISO</label>
-                    <select className="w-full px-3 py-2 bg-dark-lighter rounded-lg">
-                      <option>ISO 400</option>
-                      <option>ISO 800</option>
-                      <option>ISO 1600</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm mb-2">Default Aperture</label>
-                    <select className="w-full px-3 py-2 bg-dark-lighter rounded-lg">
-                      <option>f/5.6</option>
-                      <option>f/8.0</option>
-                      <option>f/11</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
+              <CameraSettings />
             </div>
           )}
+
+          {activeTab === 'capture' && <CaptureSettings />}
+          {activeTab === 'layout' && <LayoutSettings />}
 
           {activeTab === 'display' && (
             <div className="max-w-2xl">
@@ -116,22 +102,20 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => updateSettings({ screenOrientation: 'landscape' })}
-                    className={`px-4 py-3 rounded-lg border-2 transition ${
-                      settings.screenOrientation === 'landscape'
-                        ? 'border-primary bg-primary/10'
-                        : 'border-gray-700 hover:border-gray-600'
-                    }`}
+                    className={`px-4 py-3 rounded-lg border-2 transition ${settings.screenOrientation === 'landscape'
+                      ? 'border-primary bg-primary/10'
+                      : 'border-gray-700 hover:border-gray-600'
+                      }`}
                   >
                     <div className="text-sm font-medium">Landscape</div>
                     <div className="text-xs text-gray-400">1920 x 1080</div>
                   </button>
                   <button
                     onClick={() => updateSettings({ screenOrientation: 'portrait' })}
-                    className={`px-4 py-3 rounded-lg border-2 transition ${
-                      settings.screenOrientation === 'portrait'
-                        ? 'border-primary bg-primary/10'
-                        : 'border-gray-700 hover:border-gray-600'
-                    }`}
+                    className={`px-4 py-3 rounded-lg border-2 transition ${settings.screenOrientation === 'portrait'
+                      ? 'border-primary bg-primary/10'
+                      : 'border-gray-700 hover:border-gray-600'
+                      }`}
                   >
                     <div className="text-sm font-medium">Portrait</div>
                     <div className="text-xs text-gray-400">1080 x 1920</div>
@@ -200,14 +184,12 @@ export default function SettingsPage() {
                 </div>
                 <button
                   onClick={() => updateSettings({ autoPrint: !settings.autoPrint })}
-                  className={`relative w-12 h-6 rounded-full ${
-                    settings.autoPrint ? 'bg-primary' : 'bg-gray-600'
-                  }`}
+                  className={`relative w-12 h-6 rounded-full ${settings.autoPrint ? 'bg-primary' : 'bg-gray-600'
+                    }`}
                 >
                   <div
-                    className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-                      settings.autoPrint ? 'right-0.5' : 'left-0.5'
-                    }`}
+                    className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform ${settings.autoPrint ? 'right-0.5' : 'left-0.5'
+                      }`}
                   />
                 </button>
               </div>

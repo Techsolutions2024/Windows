@@ -5,44 +5,44 @@ interface AppState {
   // Events
   events: Event[]
   currentEvent: Event | null
-  
+
   // Photos
   photos: Photo[]
   currentPhoto: Photo | null
-  
+
   // Cameras
   cameras: Camera[]
   selectedCamera: Camera | null
-  
+
   // Settings
   settings: AppSettings
-  
+
   // Live view
   liveViewActive: boolean
   liveViewFrame: string | null
-  
+
   // Capture state
   isCapturing: boolean
   countdown: number
-  
+
   // Actions
   setEvents: (events: Event[]) => void
   setCurrentEvent: (event: Event | null) => void
   addEvent: (event: Event) => void
   deleteEvent: (eventId: number) => void
-  
+
   setPhotos: (photos: Photo[]) => void
   setCurrentPhoto: (photo: Photo | null) => void
   addPhoto: (photo: Photo) => void
-  
+
   setCameras: (cameras: Camera[]) => void
   setSelectedCamera: (camera: Camera | null) => void
-  
+
   updateSettings: (settings: Partial<AppSettings>) => void
-  
+
   setLiveViewActive: (active: boolean) => void
   setLiveViewFrame: (frame: string | null) => void
-  
+
   setIsCapturing: (capturing: boolean) => void
   setCountdown: (count: number) => void
 }
@@ -71,6 +71,15 @@ export const useAppStore = create<AppState>((set) => ({
     autoPrint: false,
     printCopies: 1,
     screenOrientation: 'landscape',
+    photoInterval: 3,
+    layout: {
+      selectedLayoutId: '1',
+      layouts: [
+        { id: '1', name: 'Single Photo', path: '/layouts/1.png', photoCount: 1 },
+        { id: '2', name: 'Three Photos', path: '/layouts/2.png', photoCount: 3 },
+        { id: '3', name: 'Four Grid', path: '/layouts/3.png', photoCount: 4 },
+      ]
+    }
   },
   liveViewActive: false,
   liveViewFrame: null,

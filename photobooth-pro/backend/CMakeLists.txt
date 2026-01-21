@@ -47,6 +47,8 @@ set(SOURCES
     src/main.cpp
     src/core/Application.cpp
     src/camera/CameraManager.cpp
+    src/camera/CanonCamera.cpp
+    src/camera/WebcamCamera.cpp
     src/api/HTTPServer.cpp
     src/api/WebSocketServer.cpp
     src/storage/DatabaseManager.cpp
