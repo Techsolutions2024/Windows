@@ -1,4 +1,5 @@
 #include "api/HTTPServer.h"
+#include "camera/WebcamCamera.h"
 #include "core/Application.h"
 #include "storage/DatabaseManager.h"
 
@@ -573,6 +574,8 @@ void HTTPServer::handleGetEventConfig(const httplib::Request &req,
     configJson["countdownSeconds"] = config->countdownSeconds;
     configJson["photoCount"] = config->photoCount;
     configJson["layoutTemplate"] = config->layoutTemplate;
+    configJson["cameraSource"] = config->cameraSource;
+    configJson["webcamIndex"] = config->webcamIndex;
 
     json response;
     response["success"] = true;
@@ -635,6 +638,10 @@ void HTTPServer::handleUpdateEventConfig(const httplib::Request &req,
       config.photoCount = body["photoCount"];
     if (body.contains("layoutTemplate"))
       config.layoutTemplate = body["layoutTemplate"];
+    if (body.contains("cameraSource"))
+      config.cameraSource = body["cameraSource"];
+    if (body.contains("webcamIndex"))
+      config.webcamIndex = body["webcamIndex"];
 
     if (db.updateEventConfig(eventId, config)) {
       json response;
@@ -683,23 +690,80 @@ void HTTPServer::handleSearchEvents(const httplib::Request &req,
   res.set_content(response.dump(), "application/json");
 }
 
-// ==================== Camera API Stubs ====================
+// ==================== Camera API ====================
 
 void HTTPServer::handleGetCameras(const httplib::Request &req,
                                   httplib::Response &res) {
   setCorsHeaders(res);
-  // TODO: Implement with CameraManager
+
+  json camerasJson = json::array();
+
+  // Get Canon cameras from CameraManager
+  auto *camMgr = app_->getCameraManager();
+  if (camMgr) {
+    auto cameras = camMgr->getAvailableCameras();
+    for (const auto &cam : cameras) {
+      json camJson;
+      camJson["name"] = cam.name;
+      camJson["type"] = cam.type == CameraType::Canon ? "canon" : "webcam";
+      camJson["connected"] = cam.connected;
+      camerasJson.push_back(camJson);
+    }
+  }
+
+  // Get available webcams
+  auto webcams = WebcamCamera::listAvailableWebcams();
+  for (const auto &[index, name] : webcams) {
+    json camJson;
+    camJson["name"] = name;
+    camJson["type"] = "webcam";
+    camJson["webcamIndex"] = index;
+    camJson["connected"] = false;
+    camerasJson.push_back(camJson);
+  }
+
   json response;
   response["success"] = true;
-  response["data"] = json::array();
+  response["data"] = camerasJson;
   res.set_content(response.dump(), "application/json");
 }
 
 void HTTPServer::handleSelectCamera(const httplib::Request &req,
                                     httplib::Response &res) {
   setCorsHeaders(res);
-  // TODO: Implement
-  res.set_content(jsonResponse(true, "Camera selected"), "application/json");
+
+  try {
+    json body = json::parse(req.body);
+    std::string cameraType = body.value("type", "canon");
+    int webcamIndex = body.value("webcamIndex", 0);
+
+    auto *camMgr = app_->getCameraManager();
+    if (!camMgr) {
+      res.status = 500;
+      res.set_content(jsonError("Camera Manager not initialized", 500),
+                      "application/json");
+      return;
+    }
+
+    bool success = false;
+    if (cameraType == "webcam") {
+      success = camMgr->selectWebcam(webcamIndex);
+    } else {
+      std::string cameraName = body.value("name", "");
+      success = camMgr->selectCamera(cameraName);
+    }
+
+    if (success) {
+      res.set_content(jsonResponse(true, "Camera selected"), "application/json");
+    } else {
+      res.status = 400;
+      res.set_content(jsonError("Failed to select camera", 400),
+                      "application/json");
+    }
+  } catch (const std::exception &e) {
+    res.status = 400;
+    res.set_content(jsonError(e.what(), 400), "application/json");
+  }
 }
 
 void HTTPServer::handleGetCameraSettings(const httplib::Request &req,

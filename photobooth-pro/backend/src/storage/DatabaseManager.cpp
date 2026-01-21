@@ -64,6 +64,8 @@ bool DatabaseManager::createTables() {
   executeSQL("ALTER TABLE events ADD COLUMN location TEXT;");
   executeSQL("ALTER TABLE events ADD COLUMN event_date TEXT;");
   executeSQL("ALTER TABLE event_configs ADD COLUMN camera_settings TEXT;");
+  executeSQL("ALTER TABLE event_configs ADD COLUMN camera_source TEXT DEFAULT 'canon';");
+  executeSQL("ALTER TABLE event_configs ADD COLUMN webcam_index INTEGER DEFAULT 0;");
 
   const char *eventConfigSql = R"(
         CREATE TABLE IF NOT EXISTS event_configs (
@@ -81,6 +83,8 @@ bool DatabaseManager::createTables() {
             watermark_config TEXT,
             post_process_config TEXT,
             camera_settings TEXT,
+            camera_source TEXT DEFAULT 'canon',
+            webcam_index INTEGER DEFAULT 0,
             countdown_seconds INTEGER DEFAULT 3,
             photo_count INTEGER DEFAULT 4,
             layout_template TEXT,
@@ -189,6 +193,8 @@ int DatabaseManager::createEvent(const std::string &name,
   defaultConfig.videoEnabled = true;
   defaultConfig.countdownSeconds = 3;
   defaultConfig.photoCount = 4;
+  defaultConfig.cameraSource = "canon";
+  defaultConfig.webcamIndex = 0;
   saveEventConfig(defaultConfig);
 
   return eventId;
@@ -444,7 +450,7 @@ bool DatabaseManager::saveEventConfig(const EventConfig &config) {
          "gif_enabled, "
       << "boomerang_enabled, video_enabled, effects_config, props_config, "
       << "beauty_filter_config, watermark_config, post_process_config, "
-      << "camera_settings, "
+      << "camera_settings, camera_source, webcam_index, "
       << "countdown_seconds, photo_count, layout_template) VALUES ("
       << config.eventId << ", '" << escapeString(config.startScreenImage)
       << "', '" << escapeString(config.captureMode) << "', "
@@ -456,8 +462,9 @@ bool DatabaseManager::saveEventConfig(const EventConfig &config) {
       << escapeString(config.beautyFilterConfig) << "', '"
       << escapeString(config.watermarkConfig) << "', '"
       << escapeString(config.postProcessConfig) << "', '"
-      << escapeString(config.cameraSettings) << "', " << config.countdownSeconds
-      << ", " << config.photoCount << ", '"
+      << escapeString(config.cameraSettings) << "', '"
+      << escapeString(config.cameraSource) << "', " << config.webcamIndex
+      << ", " << config.countdownSeconds << ", " << config.photoCount << ", '"
       << escapeString(config.layoutTemplate) << "');";
 
   return executeSQL(sql.str());
@@ -469,7 +476,7 @@ std::optional<EventConfig> DatabaseManager::getEventConfig(int eventId) {
          "gif_enabled, "
       << "boomerang_enabled, video_enabled, effects_config, props_config, "
       << "beauty_filter_config, watermark_config, post_process_config, "
-      << "camera_settings, "
+      << "camera_settings, camera_source, webcam_index, "
       << "countdown_seconds, photo_count, layout_template "
       << "FROM event_configs WHERE event_id = " << eventId << ";";
 
@@ -521,11 +528,16 @@ std::optional<EventConfig> DatabaseManager::getEventConfig(int eventId) {
         reinterpret_cast<const char *>(sqlite3_column_text(stmt, 12));
     config.cameraSettings = cameraSettings ? cameraSettings : "";
 
-    config.countdownSeconds = sqlite3_column_int(stmt, 13);
-    config.photoCount = sqlite3_column_int(stmt, 14);
+    const char *cameraSource =
+        reinterpret_cast<const char *>(sqlite3_column_text(stmt, 13));
+    config.cameraSource = cameraSource ? cameraSource : "canon";
+
+    config.webcamIndex = sqlite3_column_int(stmt, 14);
+    config.countdownSeconds = sqlite3_column_int(stmt, 15);
+    config.photoCount = sqlite3_column_int(stmt, 16);
 
     const char *layout =
-        reinterpret_cast<const char *>(sqlite3_column_text(stmt, 15));
+        reinterpret_cast<const char *>(sqlite3_column_text(stmt, 17));
     config.layoutTemplate = layout ? layout : "";
 
     sqlite3_finalize(stmt);

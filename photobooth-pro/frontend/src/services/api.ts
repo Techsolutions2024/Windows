@@ -39,6 +39,15 @@ export interface EventConfig {
   countdownSeconds: number;
   photoCount: number;
   layoutTemplate: string;
+  cameraSource: 'canon' | 'webcam';
+  webcamIndex: number;
+}
+
+export interface Camera {
+  name: string;
+  type: 'canon' | 'webcam';
+  connected: boolean;
+  webcamIndex?: number;
 }
 
 export interface Photo {
@@ -185,14 +194,18 @@ class ApiService {
 
   // ==================== Camera ====================
 
-  async getCameras(): Promise<ApiResponse<any[]>> {
-    return this.request<any[]>('/api/cameras');
+  async getCameras(): Promise<ApiResponse<Camera[]>> {
+    return this.request<Camera[]>('/api/cameras');
   }
 
-  async selectCamera(cameraId: string): Promise<ApiResponse<void>> {
+  async selectCamera(params: {
+    type: 'canon' | 'webcam';
+    name?: string;
+    webcamIndex?: number;
+  }): Promise<ApiResponse<void>> {
     return this.request<void>('/api/cameras/select', {
       method: 'POST',
-      body: JSON.stringify({ cameraId }),
+      body: JSON.stringify(params),
     });
   }
 

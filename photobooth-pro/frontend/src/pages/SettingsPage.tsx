@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Camera, Monitor, Printer, Wifi, Database, Info, Timer, Image as ImageIcon } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 import CameraSettings from '../components/CameraSettings'
+import CameraSourceSettings from '../components/CameraSourceSettings'
 import CaptureSettings from '../components/CaptureSettings'
 import LayoutSettings from '../components/LayoutSettings'
 
@@ -64,28 +65,24 @@ export default function SettingsPage() {
         {/* Main Content */}
         <div className="flex-1 overflow-y-auto p-8">
           {activeTab === 'camera' && (
-            <div className="max-w-2xl">
-              <h2 className="text-2xl font-semibold mb-6">Camera Settings</h2>
+            <div className="max-w-2xl space-y-8">
+              <div>
+                <h2 className="text-2xl font-semibold mb-6">Camera Settings</h2>
 
-              {/* Camera Selection */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">Select Camera</label>
-                <select
-                  value={settings.selectedCamera || ''}
-                  onChange={(e) => updateSettings({ selectedCamera: e.target.value })}
-                  className="w-full px-4 py-3 bg-dark-lighter rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <option value="">No camera selected</option>
-                  {cameras.map((camera) => (
-                    <option key={camera.name} value={camera.name}>
-                      {camera.name} ({camera.type})
-                    </option>
-                  ))}
-                </select>
+                {/* Camera Source Selection */}
+                <div className="bg-dark p-6 rounded-xl border border-gray-700 mb-6">
+                  <CameraSourceSettings />
+                </div>
+
+                {/* Camera Parameters */}
+                <div className="bg-dark p-6 rounded-xl border border-gray-700">
+                  <h3 className="text-lg font-semibold text-white mb-4">Camera Parameters</h3>
+                  <p className="text-sm text-gray-400 mb-4">
+                    These settings are available for Canon DSLR cameras. Webcams use auto exposure.
+                  </p>
+                  <CameraSettings />
+                </div>
               </div>
-
-              {/* Default Settings */}
-              <CameraSettings />
             </div>
           )}
 

@@ -172,6 +172,62 @@ std::string CameraManager::getActiveCameraName() const {
   return "";
 }
 
+std::vector<CameraInfo> CameraManager::getAvailableCameras() const {
+  std::vector<CameraInfo> cameras;
+
+  if (!initialized_)
+    return cameras;
+
+  // Detect Canon cameras
+  EdsCameraListRef cameraList = nullptr;
+  EdsUInt32 count = 0;
+
+  EdsError err = EdsGetCameraList(&cameraList);
+  if (err == EDS_ERR_OK) {
+    err = EdsGetChildCount(cameraList, &count);
+    if (err == EDS_ERR_OK) {
+      for (EdsUInt32 i = 0; i < count; i++) {
+        EdsCameraRef camRef = nullptr;
+        err = EdsGetChildAtIndex(cameraList, i, &camRef);
+        if (err == EDS_ERR_OK) {
+          EdsDataType dataType;
+          EdsUInt32 dataSize;
+          char name[256];
+          err = EdsGetPropertySize(camRef, kEdsPropID_ProductName, 0, &dataType,
+                                   &dataSize);
+          if (err == EDS_ERR_OK) {
+            EdsGetPropertyData(camRef, kEdsPropID_ProductName, 0, dataSize,
+                               name);
+            CameraInfo info;
+            info.name = std::string(name);
+            info.type = CameraType::Canon;
+            info.connected = (activeCamera_ && activeCamera_->getName() == info.name);
+            info.webcamIndex = -1;
+            cameras.push_back(info);
+          }
+          EdsRelease(camRef);
+        }
+      }
+    }
+    EdsRelease(cameraList);
+  }
+
+  return cameras;
+}
+
+bool CameraManager::selectWebcam(int deviceIndex) {
+  // Close existing
+  if (activeCamera_) {
+    activeCamera_->disconnect();
+    delete activeCamera_;
+    activeCamera_ = nullptr;
+  }
+
+  std::string name = "Webcam " + std::to_string(deviceIndex);
+  activeCamera_ = new WebcamCamera(deviceIndex, name);
+  return activeCamera_->connect();
+}
+
 bool CameraManager::startLiveView(LiveViewCallback callback) {
   if (activeCamera_)
     return activeCamera_->startLiveView(callback);

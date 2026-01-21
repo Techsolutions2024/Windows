@@ -21,6 +21,8 @@ struct EventConfig {
   std::string watermarkConfig;    // JSON string
   std::string postProcessConfig;  // JSON string
   std::string cameraSettings;     // JSON string
+  std::string cameraSource;       // "canon", "webcam", or specific camera name
+  int webcamIndex;                // Webcam device index (0, 1, 2, etc.)
   int countdownSeconds;
   int photoCount;             // Number of photos per session
   std::string layoutTemplate; // Layout template name

@@ -33,6 +33,26 @@ export interface Camera {
   name: string
   type: 'canon' | 'webcam'
   connected: boolean
+  webcamIndex?: number
+}
+
+export interface EventConfig {
+  eventId: number
+  captureMode: CaptureMode
+  photoEnabled: boolean
+  gifEnabled: boolean
+  boomerangEnabled: boolean
+  videoEnabled: boolean
+  countdownSeconds: number
+  photoCount: number
+  layoutTemplate: string
+  cameraSource: 'canon' | 'webcam'
+  webcamIndex: number
+  effectsConfig?: string
+  propsConfig?: string
+  beautyFilterConfig?: string
+  watermarkConfig?: string
+  postProcessConfig?: string
 }
 
 export interface AppSettings {

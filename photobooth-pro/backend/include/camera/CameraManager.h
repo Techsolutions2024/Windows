@@ -5,8 +5,15 @@
 #include <mutex>
 #include <vector>
 
-
 namespace photobooth {
+
+// Camera info for API responses
+struct CameraInfo {
+  std::string name;
+  CameraType type;
+  bool connected;
+  int webcamIndex; // Only for webcams
+};
 
 class CameraManager {
 public:
@@ -17,9 +24,11 @@ public:
   bool initialize();
   void shutdown();
   std::vector<std::string> detectCameras();
+  std::vector<CameraInfo> getAvailableCameras() const;
 
   // Camera selection
   bool selectCamera(const std::string &cameraName);
+  bool selectWebcam(int deviceIndex);
   ICamera *getActiveCamera();
   std::string getActiveCameraName() const;
 

@@ -2,16 +2,18 @@
 
 #include "ICamera.h"
 #include <atomic>
-#include <dshow.h>
+#include <mutex>
 #include <thread>
-#include <windows.h>
 
+#ifdef USE_OPENCV
+#include <opencv2/opencv.hpp>
+#endif
 
 namespace photobooth {
 
 class WebcamCamera : public ICamera {
 public:
-  WebcamCamera(int deviceIndex, const std::string &name);
+  WebcamCamera(int deviceIndex = 0, const std::string &name = "Webcam");
   ~WebcamCamera() override;
 
   // ICamera implementation
@@ -37,31 +39,31 @@ public:
   std::vector<std::string> getSupportedShutterSpeeds() const override;
   std::vector<std::string> getSupportedWhiteBalances() const override;
 
+  // Webcam specific
+  void setResolution(int width, int height);
+  static std::vector<std::pair<int, std::string>> listAvailableWebcams();
+
 private:
   int deviceIndex_;
   std::string name_;
-  bool connected_;
-
-  // DirectShow interfaces
-  IGraphBuilder *graphBuilder_;
-  ICaptureGraphBuilder2 *captureBuilder_;
-  IMediaControl *mediaControl_;
-  IBaseFilter *sourceFilter_;
-
-  // Live view
+  std::atomic<bool> connected_;
   std::atomic<bool> liveViewActive_;
+
+#ifdef USE_OPENCV
+  cv::VideoCapture capture_;
+  std::mutex captureMutex_;
+#endif
+
   std::thread liveViewThread_;
   LiveViewCallback liveViewCallback_;
-
-  // Capture
-  CaptureCallback captureCallback_;
   CameraSettings settings_;
 
-  // Helper methods
+  int frameWidth_ = 1280;
+  int frameHeight_ = 720;
+
   void liveViewLoop();
-  bool initializeDirectShow();
-  void cleanupDirectShow();
-  bool captureFrame(std::vector<uint8_t> &frameData, int &width, int &height);
+  std::vector<uint8_t> encodeFrameToJpeg(const std::vector<uint8_t> &rgbData,
+                                          int width, int height);
   void applyMirrorAndRotation(std::vector<uint8_t> &imageData, int &width,
                               int &height);
 };
