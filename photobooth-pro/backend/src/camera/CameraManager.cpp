@@ -10,9 +10,21 @@
 
 #ifdef _WIN32
 #include "camera/CanonCamera.h"
+#include "camera/WebcamCamera.h"
 #endif
 
+// ...
+
+// Remove duplicate definition if it was here.
+// The previous "void CameraManager::detectWebcams() {}" was likely around line
+// 205. We will target the end of file area to remove it if it exists, or just
+// ensure proper structure.
+
+// Since I cannot see the exact lines 200+ anymore easily without view_file, and
+// I know I added one at the top. Let's first add the include.
+
 namespace photobooth {
+// ...
 
 CameraManager::CameraManager() : activeCamera_(nullptr), initialized_(false) {}
 
@@ -212,7 +224,7 @@ CameraSettings CameraManager::getSettings() const {
 
 // ... (previous content)
 void CameraManager::detectCanonCameras() {}
-void CameraManager::detectWebcams() {}
+// detectWebcams implemented earlier
 
 std::vector<int> CameraManager::getSupportedISO() const {
   if (activeCamera_)

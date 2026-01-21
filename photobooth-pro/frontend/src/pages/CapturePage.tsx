@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
-// import { useAppStore } from '../store/useAppStore';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAppStore } from '../store/useAppStore';
 import LiveViewDisplay from '../components/LiveViewDisplay';
 import CountdownOverlay from '../components/CountdownOverlay';
 import PhotoStripTray from '../components/PhotoStripTray';
@@ -17,24 +17,36 @@ export default function CapturePage() {
   const { eventId: paramEventId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  // const { settings, updateSettings, countdown, isCapturing } = useAppStore();
+  const { settings } = useAppStore();
 
   const eventId = paramEventId || searchParams.get('eventId');
   const modeParam = searchParams.get('mode');
 
   const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
-  const [captureMode, setCaptureMode] = useState<'photo' | 'gif' | 'boomerang' | 'video'>((modeParam as any) || 'photo');
-  const [photos, setPhotos] = useState<Photo[]>([
-    { id: 1, status: 'empty' },
-    { id: 2, status: 'empty' },
-    { id: 3, status: 'empty' },
-    { id: 4, status: 'empty' },
-  ]);
+  const [captureMode, setCaptureMode] = useState<'photo' | 'gif' | 'boomerang' | 'video'>((modeParam as any) || settings.captureMode || 'photo');
+
+  // Determine configuration based on settings
+  const selectedLayout = settings.layout.layouts.find(l => l.id === settings.layout.selectedLayoutId);
+  const totalPhotos = selectedLayout ? selectedLayout.photoCount : 1; // Default to 1 if no layout
+
+  const [photos, setPhotos] = useState<Photo[]>([]);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [countdownValue, setCountdownValue] = useState(0);
+  const [isSequenceRunning, setIsSequenceRunning] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
+
+  // Initialize photos based on layout
+  useEffect(() => {
+    const initialPhotos: Photo[] = Array.from({ length: totalPhotos }, (_, i) => ({
+      id: i + 1,
+      status: 'empty'
+    }));
+    setPhotos(initialPhotos);
+    setCurrentPhotoIndex(0);
+  }, [totalPhotos]);
 
   useEffect(() => {
-    // Fetch event details if eventId is present
+    // Fetch event details
     if (eventId) {
       const fetchEvent = async () => {
         try {
@@ -52,7 +64,7 @@ export default function CapturePage() {
       fetchEvent();
     }
 
-    // Start live view when component mounts
+    // Start Live View
     const startLiveView = async () => {
       try {
         await api.startLiveView();
@@ -62,75 +74,87 @@ export default function CapturePage() {
     };
     startLiveView();
 
-    // Cleanup: Stop live view when unmounting
     return () => {
       api.stopLiveView();
     };
   }, [eventId]);
 
-  const handleCapture = async () => {
-    if (currentPhotoIndex >= 4) return;
+  // Sequence Runner
+  const startCaptureSequence = async () => {
+    if (isSequenceRunning) return;
+    setIsSequenceRunning(true);
 
-    // Start countdown
-    setCountdownValue(3);
-    const countdownInterval = setInterval(() => {
-      setCountdownValue((prev) => {
-        if (prev <= 1) {
-          clearInterval(countdownInterval);
-          capturePhoto();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    for (let i = 0; i < totalPhotos; i++) {
+      setCurrentPhotoIndex(i);
+
+      // 1. Interval delay (except first photo, or maybe even first if configured?)
+      // Usually first photo has a "Get Ready" countdown.
+      // Subsequent photos have "Next photo in..." countdown/interval.
+
+      const countDuration = i === 0 ? settings.countdownDuration : settings.photoInterval;
+
+      await runCountdown(countDuration);
+
+      // 2. Capture
+      await capturePhoto(i);
+
+      // 3. Short preview delay
+      if (i < totalPhotos - 1) {
+        setStatusMessage("Great shot! Next one coming up...");
+        await new Promise(r => setTimeout(r, 2000)); // 2s preview of result
+        setStatusMessage("");
+      }
+    }
+
+    setIsSequenceRunning(false);
+
+    // Complete
+    setStatusMessage("All done! Processing...");
+    setTimeout(() => {
+      navigate(`/print-result${eventId ? `?eventId=${eventId}` : ''}`);
+    }, 1500);
   };
 
-  const capturePhoto = async () => {
-    // Mark current photo as capturing
-    setPhotos((prev) =>
-      prev.map((photo) =>
-        photo.id === currentPhotoIndex + 1 ? { ...photo, status: 'capturing' } : photo
-      )
-    );
+  const runCountdown = (seconds: number): Promise<void> => {
+    return new Promise((resolve) => {
+      setCountdownValue(seconds);
+      if (seconds === 0) {
+        resolve();
+        return;
+      }
+
+      let remaining = seconds;
+      const interval = setInterval(() => {
+        remaining -= 1;
+        setCountdownValue(remaining);
+        if (remaining <= 0) {
+          clearInterval(interval);
+          resolve();
+        }
+      }, 1000);
+    });
+  };
+
+  const capturePhoto = async (index: number) => {
+    // Mark as capturing
+    setPhotos(prev => prev.map((p, idx) => idx === index ? { ...p, status: 'capturing' } : p));
 
     try {
-      // Call backend to capture
-      // If eventId is available, pass it. If not, maybe pass 0 or handle error?
-      // The API requires eventId.
       const idToUse = eventId ? parseInt(eventId) : 0;
-      console.log("Capturing photo for event:", idToUse);
+      console.log(`Capturing photo ${index + 1}/${totalPhotos}`);
 
-      // Simulating API call delay and result for now as LiveView might not be sending images back in this context yet
-      // In a real scenario: const response = await api.capturePhoto(idToUse);
+      // Actual API call
+      // const response = await api.capturePhoto(idToUse);
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const mockImageUrl = `https://picsum.photos/400/300?random=${currentPhotoIndex + 1}`;
+      // Simulation
+      await new Promise(resolve => setTimeout(resolve, 800)); // Shutter lag simulation
+      const mockImageUrl = `https://picsum.photos/400/300?random=${Date.now()}`;
 
-      setPhotos((prev) =>
-        prev.map((photo) =>
-          photo.id === currentPhotoIndex + 1
-            ? { ...photo, imageUrl: mockImageUrl, status: 'filled' }
-            : photo
-        )
-      );
-
-      // Move to next photo
-      if (currentPhotoIndex < 3) {
-        setCurrentPhotoIndex(currentPhotoIndex + 1);
-      } else {
-        // All photos captured, navigate to result
-        setTimeout(() => {
-          navigate(`/print-result${eventId ? `?eventId=${eventId}` : ''}`);
-        }, 1500);
-      }
+      setPhotos(prev => prev.map((p, idx) => idx === index ? { ...p, status: 'filled', imageUrl: mockImageUrl } : p));
 
     } catch (error) {
       console.error("Capture failed", error);
-      setPhotos((prev) =>
-        prev.map((photo) =>
-          photo.id === currentPhotoIndex + 1 ? { ...photo, status: 'empty' } : photo
-        )
-      );
+      setPhotos(prev => prev.map((p, idx) => idx === index ? { ...p, status: 'empty' } : p));
     }
   };
 
@@ -139,15 +163,14 @@ export default function CapturePage() {
   };
 
   const handleRetake = () => {
-    if (currentPhotoIndex > 0) {
-      const prevIndex = currentPhotoIndex - 1;
-      setPhotos((prev) =>
-        prev.map((photo) =>
-          photo.id === prevIndex + 1 ? { id: photo.id, status: 'empty' } : photo
-        )
-      );
-      setCurrentPhotoIndex(prevIndex);
-    }
+    // Reset
+    const initialPhotos: Photo[] = Array.from({ length: totalPhotos }, (_, i) => ({
+      id: i + 1,
+      status: 'empty'
+    }));
+    setPhotos(initialPhotos);
+    setCurrentPhotoIndex(0);
+    setIsSequenceRunning(false);
   };
 
   return (
@@ -155,11 +178,11 @@ export default function CapturePage() {
       {/* Top Bar */}
       <div className="absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black via-black/80 to-transparent px-10 py-6">
         <div className="flex items-center justify-between">
-          {/* Left - Back & Event Info */}
           <div className="flex items-center gap-6">
             <button
               onClick={handleBack}
-              className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-colors"
+              disabled={isSequenceRunning}
+              className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-colors disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-white">arrow_back</span>
             </button>
@@ -174,118 +197,75 @@ export default function CapturePage() {
                   {currentEvent?.name || 'Quick Session'}
                 </h2>
                 <p className="text-white/60 text-sm font-medium">
-                  {currentPhotoIndex + 1} of 4 photos
+                  {selectedLayout?.name || 'Default Layout'} • {totalPhotos} Photos
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Right - Camera Status & Mode */}
+          {/* Right Info */}
           <div className="flex items-center gap-4">
-            {/* Capture Mode Selector */}
-            <div className="flex gap-2 bg-white/10 backdrop-blur-sm rounded-xl p-1">
-              <button
-                onClick={() => setCaptureMode('photo')}
-                className={`px-6 py-2 rounded-lg text-sm font-bold uppercase tracking-wider transition-all ${captureMode === 'photo'
-                  ? 'bg-primary text-white shadow-lg'
-                  : 'text-white/70 hover:text-white'
-                  }`}
-              >
-                Photo
-              </button>
-              <button
-                onClick={() => setCaptureMode('gif')}
-                className={`px-6 py-2 rounded-lg text-sm font-bold uppercase tracking-wider transition-all ${captureMode === 'gif'
-                  ? 'bg-primary text-white shadow-lg'
-                  : 'text-white/70 hover:text-white'
-                  }`}
-              >
-                GIF
-              </button>
-              <button
-                onClick={() => setCaptureMode('boomerang')}
-                className={`px-6 py-2 rounded-lg text-sm font-bold uppercase tracking-wider transition-all ${captureMode === 'boomerang'
-                  ? 'bg-primary text-white shadow-lg'
-                  : 'text-white/70 hover:text-white'
-                  }`}
-              >
-                Boomerang
-              </button>
-              <button
-                onClick={() => setCaptureMode('video')}
-                className={`px-6 py-2 rounded-lg text-sm font-bold uppercase tracking-wider transition-all ${captureMode === 'video'
-                  ? 'bg-primary text-white shadow-lg'
-                  : 'text-white/70 hover:text-white'
-                  }`}
-              >
-                Video
-              </button>
+            <div className="px-4 py-2 bg-white/10 backdrop-blur-sm rounded-lg text-white font-medium">
+              {captureMode.toUpperCase()}
             </div>
-
-            {/* Camera Status */}
-            <div className="flex items-center gap-3 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-xl">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-white text-sm font-medium">Canon R100</span>
-            </div>
-
-            {/* Settings */}
-            <button className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-colors">
-              <span className="material-symbols-outlined text-white">settings</span>
-            </button>
+            {settings.selectedCamera && (
+              <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-lg text-white">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                <span className="text-sm">{settings.selectedCamera}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Center - Live View */}
-      <div className="flex-1 relative flex items-center justify-center">
+      <div className="flex-1 relative flex items-center justify-center bg-gray-900">
         <LiveViewDisplay filter="none" />
 
-        {/* Countdown Overlay */}
-        {countdownValue > 0 && <CountdownOverlay count={countdownValue} />}
+        <AnimatePresence>
+          {countdownValue > 0 && <CountdownOverlay count={countdownValue} key="countdown" />}
 
-        {/* Center Capture Button */}
-        <div className="absolute bottom-40 left-1/2 transform -translate-x-1/2 z-10">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleCapture}
-            disabled={currentPhotoIndex >= 4 || countdownValue > 0}
-            className={`relative w-24 h-24 rounded-full flex items-center justify-center transition-all ${currentPhotoIndex >= 4 || countdownValue > 0
-              ? 'bg-gray-600 cursor-not-allowed'
-              : 'bg-primary hover:bg-primary-600 shadow-2xl shadow-primary/50'
-              }`}
-          >
-            <div className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center">
-              <span className="material-symbols-outlined text-white text-4xl">
-                photo_camera
-              </span>
-            </div>
-          </motion.button>
-        </div>
+          {statusMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="absolute top-1/4 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur px-6 py-3 rounded-full text-white font-xl font-medium z-30"
+            >
+              {statusMessage}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* Retake Button */}
-        {currentPhotoIndex > 0 && currentPhotoIndex < 4 && (
-          <motion.button
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleRetake}
-            className="absolute bottom-40 right-20 z-10 flex items-center gap-2 px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-colors"
-          >
-            <span className="material-symbols-outlined text-white">undo</span>
-            <span className="text-white font-bold">Retake</span>
-          </motion.button>
+        {/* Start Button */}
+        {!isSequenceRunning && currentPhotoIndex === 0 && (
+          <div className="absolute bottom-40 left-1/2 transform -translate-x-1/2 z-10">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={startCaptureSequence}
+              className="relative w-24 h-24 rounded-full flex items-center justify-center bg-primary hover:bg-primary-600 shadow-2xl shadow-primary/50 transition-all"
+            >
+              <div className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center">
+                <span className="material-symbols-outlined text-white text-4xl">
+                  photo_camera
+                </span>
+              </div>
+            </motion.button>
+            <p className="absolute -bottom-10 left-1/2 -translate-x-1/2 text-white/80 font-medium whitespace-nowrap">
+              Tap to Start
+            </p>
+          </div>
         )}
+
+        {/* Retake Button (only if sequence finished but not navigated yet - though we auto navigate)
+            Or if we want to allow stopping? For now let's keep it simple.
+         */}
       </div>
 
       {/* Bottom - Photo Strip Tray */}
-      <PhotoStripTray photos={photos} totalSlots={4} />
+      <PhotoStripTray photos={photos} totalSlots={totalPhotos} />
 
-      {/* Kiosk ID */}
-      <div className="absolute bottom-6 left-6 text-white/30 text-xs font-medium uppercase tracking-[0.2em] pointer-events-none z-30">
-        Kiosk ID: BOOTH-01 // Session #{eventId || 'QUICK'}
-      </div>
     </div>
   );
 }
