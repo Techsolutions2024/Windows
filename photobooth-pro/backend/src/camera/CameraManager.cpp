@@ -99,8 +99,20 @@ std::vector<std::string> CameraManager::detectCameras() {
     EdsRelease(cameraList);
   }
 
-  // 2. Add Webcam (Mock for now, or DShow list)
-  cameras.push_back("Webcam");
+  // 2. Add Webcam (check for availability)
+  try {
+    // Simple check for index 0 availability without opening stream fully if
+    // possible But WebcamCamera::listAvailableWebcams now only checks index 0
+    // safely
+    std::vector<std::pair<int, std::string>> webcams =
+        WebcamCamera::listAvailableWebcams();
+    for (const auto &cam : webcams) {
+      cameras.push_back(cam.second);
+    }
+  } catch (...) {
+    // Fallback
+    cameras.push_back("Webcam");
+  }
 
   return cameras;
 }
@@ -201,7 +213,8 @@ std::vector<CameraInfo> CameraManager::getAvailableCameras() const {
             CameraInfo info;
             info.name = std::string(name);
             info.type = CameraType::Canon;
-            info.connected = (activeCamera_ && activeCamera_->getName() == info.name);
+            info.connected =
+                (activeCamera_ && activeCamera_->getName() == info.name);
             info.webcamIndex = -1;
             cameras.push_back(info);
           }

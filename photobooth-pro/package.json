@@ -2,18 +2,59 @@
   "name": "photobooth-pro",
   "version": "1.0.0",
   "description": "Professional commercial photobooth system",
-  "main": "index.js",
+  "main": "electron/main.js",
   "scripts": {
-    "dev": "cd frontend && npm run dev",
-    "build": "cd frontend && npm run build",
+    "dev": "concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
+    "dev:vite": "cd frontend && npm run dev",
+    "dev:electron": "set NODE_ENV=development && electron .",
+    "build": "npm run build:native && npm run build:frontend && npm run build:electron",
+    "build:native": "cmake-js build --runtime electron --runtime-version 28.0.0 --out native",
+    "build:frontend": "cd frontend && npm run build",
+    "build:electron": "electron-builder",
+    "start": "electron .",
     "backend:build": "cd backend/build && cmake .. && cmake --build . --config Release",
-    "backend:run": "cd backend/build && .\\Release\\photobooth-server.exe",
-    "start": "concurrently \"npm run backend:run\" \"npm run dev\""
+    "backend:run": "cd backend/build && .\\Release\\photobooth-server.exe"
   },
-  "keywords": ["photobooth", "canon", "edsdk", "react"],
+  "build": {
+    "appId": "com.photobooth.pro",
+    "productName": "Photobooth Pro",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "electron/**/*",
+      "frontend/dist/**/*",
+      "native/**/*.node"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "extraFiles": [
+      {
+        "from": "C:/opencv/build/x64/vc16/bin",
+        "to": ".",
+        "filter": [
+          "opencv_world4100.dll"
+        ]
+      }
+    ]
+  },
+  "keywords": [
+    "photobooth",
+    "canon",
+    "edsdk",
+    "react",
+    "electron"
+  ],
   "author": "Photobooth Pro Team",
   "license": "Commercial",
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "cmake-js": "^7.4.0",
+    "concurrently": "^8.2.2",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "node-addon-api": "^8.5.0",
+    "node-gyp": "^12.1.0"
   }
 }

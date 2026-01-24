@@ -3,10 +3,11 @@ import { useAppStore } from '../store/useAppStore'
 import { useLiveView } from '../services/websocket'
 
 interface LiveViewDisplayProps {
-  filter?: string
+  filter?: string;
+  mirror?: boolean;
 }
 
-export default function LiveViewDisplay({ filter = 'none' }: LiveViewDisplayProps) {
+export default function LiveViewDisplay({ filter = 'none', mirror = false }: LiveViewDisplayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const { setLiveViewActive, setLiveViewFrame } = useAppStore()
   const { frame, isActive, isConnected } = useLiveView()
@@ -50,16 +51,35 @@ export default function LiveViewDisplay({ filter = 'none' }: LiveViewDisplayProp
             drawY = 0
           }
 
+          ctx.save();
+          if (mirror) {
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+          }
+
           ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight)
+          ctx.restore();
+
           applyFilter(ctx, filter, drawX, drawY, drawWidth, drawHeight)
+
+          // Cleanup Blob URL if it is one to avoid memory leaks
+          if (frame.startsWith('blob:')) {
+            URL.revokeObjectURL(frame);
+          }
         }
-        // Frame is base64 encoded JPEG from WebSocket
-        img.src = `data:image/jpeg;base64,${frame}`
+
+        // Handle Base64 vs Blob URL
+        if (frame.startsWith('blob:')) {
+          img.src = frame;
+        } else {
+          // Assume Base64
+          img.src = `data:image/jpeg;base64,${frame}`;
+        }
       }
     } else if (!frame && canvasRef.current) {
       drawPlaceholder()
     }
-  }, [frame, filter])
+  }, [frame, filter, mirror])
 
   // Initial placeholder
   useEffect(() => {

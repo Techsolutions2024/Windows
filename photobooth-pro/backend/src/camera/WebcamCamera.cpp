@@ -1,6 +1,7 @@
 #include "camera/WebcamCamera.h"
 #include <chrono>
 #include <cstring>
+#include <exception>
 #include <fstream>
 #include <iostream>
 
@@ -21,11 +22,30 @@ bool WebcamCamera::connect() {
 
 #ifdef USE_OPENCV
   std::lock_guard<std::mutex> lock(captureMutex_);
-  capture_.open(deviceIndex_, cv::CAP_DSHOW); // Use DirectShow on Windows
+
+  try {
+    capture_.open(deviceIndex_, cv::CAP_DSHOW); // Use DirectShow on Windows
+  } catch (const std::exception &e) {
+    std::cerr << "Exception opening webcam " << deviceIndex_
+              << " with DSHOW: " << e.what() << std::endl;
+  } catch (...) {
+    std::cerr << "Unknown exception opening webcam " << deviceIndex_
+              << " with DSHOW" << std::endl;
+  }
 
   if (!capture_.isOpened()) {
+    std::cout << "DSHOW failed, trying default backend for index "
+              << deviceIndex_ << std::endl;
     // Try default backend
-    capture_.open(deviceIndex_);
+    try {
+      capture_.open(deviceIndex_);
+    } catch (const std::exception &e) {
+      std::cerr << "Exception opening webcam " << deviceIndex_
+                << " with default backend: " << e.what() << std::endl;
+    } catch (...) {
+      std::cerr << "Unknown exception opening webcam " << deviceIndex_
+                << " with default backend" << std::endl;
+    }
   }
 
   if (capture_.isOpened()) {
@@ -55,12 +75,22 @@ bool WebcamCamera::connect() {
 }
 
 void WebcamCamera::disconnect() {
+  // CRITICAL: Stop live view FIRST before releasing capture
+  // to prevent crash from thread accessing released object
   stopLiveView();
 
+  // Also ensure capture thread is finished
+  if (captureThread_.joinable()) {
+    capturing_ = false;
+    captureThread_.join();
+  }
+
 #ifdef USE_OPENCV
-  std::lock_guard<std::mutex> lock(captureMutex_);
-  if (capture_.isOpened()) {
-    capture_.release();
+  {
+    std::lock_guard<std::mutex> lock(captureMutex_);
+    if (capture_.isOpened()) {
+      capture_.release();
+    }
   }
 #endif
 
@@ -100,21 +130,31 @@ void WebcamCamera::stopLiveView() {
 bool WebcamCamera::isLiveViewActive() const { return liveViewActive_; }
 
 void WebcamCamera::liveViewLoop() {
-  while (liveViewActive_) {
+  while (liveViewActive_ && connected_) {
     auto frameStart = std::chrono::steady_clock::now();
 
 #ifdef USE_OPENCV
     cv::Mat frame;
     {
       std::lock_guard<std::mutex> lock(captureMutex_);
-      if (!capture_.isOpened() || !capture_.read(frame)) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(33));
-        continue;
+      // Double-check connection status inside lock
+      if (!connected_ || !liveViewActive_ || !capture_.isOpened()) {
+        break; // Exit loop if disconnected
+      }
+
+      try {
+        if (!capture_.read(frame)) {
+          std::this_thread::sleep_for(std::chrono::milliseconds(50));
+          continue;
+        }
+      } catch (...) {
+        std::cerr << "Exception reading frame in live view" << std::endl;
+        break; // Exit on exception
       }
     }
 
     if (frame.empty()) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(33));
+      std::this_thread::sleep_for(std::chrono::milliseconds(50));
       continue;
     }
 
@@ -142,44 +182,31 @@ void WebcamCamera::liveViewLoop() {
       }
     }
 
-    // Encode to JPEG
+    // Encode to JPEG - Reduce quality to prevent WebSocket buffer
+    // overflow/disconnects
     std::vector<uint8_t> jpegData;
-    std::vector<int> params = {cv::IMWRITE_JPEG_QUALITY, 80};
-    cv::imencode(".jpg", frame, jpegData, params);
+    std::vector<int> params = {cv::IMWRITE_JPEG_QUALITY, 60}; // Reduced from 80
+    try {
+      cv::imencode(".jpg", frame, jpegData, params);
+    } catch (...) {
+      std::cerr << "Exception encoding frame in live view" << std::endl;
+      continue;
+    }
 
     if (liveViewCallback_ && !jpegData.empty()) {
       liveViewCallback_(jpegData, frame.cols, frame.rows);
     }
 #else
-    // Simulation mode - generate gradient test pattern
-    int width = frameWidth_;
-    int height = frameHeight_;
-    std::vector<uint8_t> testFrame(width * height * 3);
-
-    static int frameCounter = 0;
-    frameCounter++;
-
-    // Generate a moving gradient pattern
-    for (int y = 0; y < height; y++) {
-      for (int x = 0; x < width; x++) {
-        int idx = (y * width + x) * 3;
-        testFrame[idx] = static_cast<uint8_t>((x + frameCounter) % 256);     // R
-        testFrame[idx + 1] = static_cast<uint8_t>((y + frameCounter) % 256); // G
-        testFrame[idx + 2] = 128;                                             // B
-      }
-    }
-
-    if (liveViewCallback_) {
-      liveViewCallback_(testFrame, width, height);
-    }
+    // ...
 #endif
 
-    // Maintain ~30 FPS
+    // Maintain ~30 FPS -> Reduce to ~20 FPS to save bandwidth (50ms)
     auto frameEnd = std::chrono::steady_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
         frameEnd - frameStart);
-    if (elapsed.count() < 33) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(33 - elapsed.count()));
+    if (elapsed.count() < 50) {
+      std::this_thread::sleep_for(
+          std::chrono::milliseconds(50 - elapsed.count()));
     }
   }
 }
@@ -192,16 +219,35 @@ void WebcamCamera::capture(CaptureMode mode, CaptureCallback callback) {
     return;
   }
 
+  // Ensure previous capture is finished
+  if (captureThread_.joinable()) {
+    captureThread_.join();
+  }
+
   // Capture in separate thread
-  std::thread([this, mode, callback]() {
+  capturing_ = true;
+  captureThread_ = std::thread([this, mode, callback]() {
+    // Safety check inside thread
+    if (!capturing_)
+      return;
+
 #ifdef USE_OPENCV
     cv::Mat frame;
     {
       std::lock_guard<std::mutex> lock(captureMutex_);
-      if (!capture_.isOpened() || !capture_.read(frame)) {
+      // Check if still connected inside lock
+      bool is_open = false;
+      try {
+        is_open = capture_.isOpened();
+      } catch (...) {
+        is_open = false;
+      }
+
+      if (!connected_ || !is_open || !capture_.read(frame)) {
         if (callback) {
           callback({false, "", {}, 0, 0, "Failed to capture frame"});
         }
+        capturing_ = false;
         return;
       }
     }
@@ -210,6 +256,7 @@ void WebcamCamera::capture(CaptureMode mode, CaptureCallback callback) {
       if (callback) {
         callback({false, "", {}, 0, 0, "Empty frame captured"});
       }
+      capturing_ = false;
       return;
     }
 
@@ -245,12 +292,21 @@ void WebcamCamera::capture(CaptureMode mode, CaptureCallback callback) {
     std::string filename =
         "data/captures/webcam_" + std::to_string(timestamp) + ".jpg";
 
-    // Save to disk
     std::vector<int> params = {cv::IMWRITE_JPEG_QUALITY, 95};
-    if (cv::imwrite(filename, frame, params)) {
+    bool saveSuccess = false;
+    try {
+      saveSuccess = cv::imwrite(filename, frame, params);
+    } catch (...) {
+      saveSuccess = false;
+    }
+
+    if (saveSuccess) {
       // Also encode to memory for immediate use
       std::vector<uint8_t> jpegData;
-      cv::imencode(".jpg", frame, jpegData, params);
+      try {
+        cv::imencode(".jpg", frame, jpegData, params);
+      } catch (...) {
+      }
 
       if (callback) {
         callback({true, filename, jpegData, frame.cols, frame.rows, ""});
@@ -264,10 +320,12 @@ void WebcamCamera::capture(CaptureMode mode, CaptureCallback callback) {
     // Simulation mode
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     if (callback) {
-      callback({true, "simulated_capture.jpg", {}, frameWidth_, frameHeight_, ""});
+      callback(
+          {true, "simulated_capture.jpg", {}, frameWidth_, frameHeight_, ""});
     }
 #endif
-  }).detach();
+    capturing_ = false;
+  });
 }
 
 void WebcamCamera::captureWithCountdown(int seconds, CaptureMode mode,
@@ -333,14 +391,29 @@ std::vector<std::pair<int, std::string>> WebcamCamera::listAvailableWebcams() {
   std::vector<std::pair<int, std::string>> webcams;
 
 #ifdef USE_OPENCV
-  // Try to open cameras at indices 0-9
-  for (int i = 0; i < 10; i++) {
-    cv::VideoCapture cap(i, cv::CAP_DSHOW);
-    if (cap.isOpened()) {
-      std::string name = "Webcam " + std::to_string(i);
-      webcams.push_back({i, name});
-      cap.release();
+  // Only check index 0 to avoid crashing on unstable drivers during enumeration
+  // Many Windows systems crash when probing non-existent DSHOW indices
+  int i = 0;
+  try {
+    cv::VideoCapture cap;
+    if (cap.open(i, cv::CAP_DSHOW)) {
+      if (cap.isOpened()) {
+        std::string name = "Webcam " + std::to_string(i);
+        webcams.push_back({i, name});
+        cap.release();
+      }
+    } else {
+      // Try default backend if DSHOW fails for index 0
+      if (cap.open(i)) {
+        if (cap.isOpened()) {
+          std::string name = "Webcam " + std::to_string(i);
+          webcams.push_back({i, name});
+          cap.release();
+        }
+      }
     }
+  } catch (...) {
+    std::cerr << "Error checking webcam 0" << std::endl;
   }
 #else
   // Return a dummy webcam in simulation mode
@@ -352,7 +425,7 @@ std::vector<std::pair<int, std::string>> WebcamCamera::listAvailableWebcams() {
 
 std::vector<uint8_t>
 WebcamCamera::encodeFrameToJpeg(const std::vector<uint8_t> &rgbData, int width,
-                                 int height) {
+                                int height) {
 #ifdef USE_OPENCV
   cv::Mat frame(height, width, CV_8UC3, const_cast<uint8_t *>(rgbData.data()));
   std::vector<uint8_t> jpegData;

@@ -169,7 +169,7 @@ export default function EventsPage() {
   const handleLaunchEvent = () => {
     const selectedEvent = events.find((e) => e.selected);
     if (selectedEvent) {
-      navigate(`/mode-selection?eventId=${selectedEvent.id}`);
+      navigate(`/attract?eventId=${selectedEvent.id}`);
     }
   };
 

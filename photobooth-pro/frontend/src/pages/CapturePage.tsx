@@ -220,7 +220,7 @@ export default function CapturePage() {
 
       {/* Center - Live View */}
       <div className="flex-1 relative flex items-center justify-center bg-gray-900">
-        <LiveViewDisplay filter="none" />
+        <LiveViewDisplay filter="none" mirror={currentEvent?.config?.mirrorCamera} />
 
         <AnimatePresence>
           {countdownValue > 0 && <CountdownOverlay count={countdownValue} key="countdown" />}

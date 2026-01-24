@@ -41,6 +41,7 @@ export interface EventConfig {
   layoutTemplate: string;
   cameraSource: 'canon' | 'webcam';
   webcamIndex: number;
+  mirrorCamera: boolean;
 }
 
 export interface Camera {

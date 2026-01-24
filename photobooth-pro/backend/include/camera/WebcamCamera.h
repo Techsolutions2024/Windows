@@ -55,6 +55,8 @@ private:
 #endif
 
   std::thread liveViewThread_;
+  std::thread captureThread_;
+  std::atomic<bool> capturing_ = false;
   LiveViewCallback liveViewCallback_;
   CameraSettings settings_;
 
@@ -63,7 +65,7 @@ private:
 
   void liveViewLoop();
   std::vector<uint8_t> encodeFrameToJpeg(const std::vector<uint8_t> &rgbData,
-                                          int width, int height);
+                                         int width, int height);
   void applyMirrorAndRotation(std::vector<uint8_t> &imageData, int &width,
                               int &height);
 };

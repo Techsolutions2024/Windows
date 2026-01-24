@@ -19,7 +19,7 @@ export default function CameraSourceSettings({
     config?.cameraSource || 'canon'
   )
   const [webcamIndex, setWebcamIndex] = useState(config?.webcamIndex || 0)
-  const [testingCamera, setTestingCamera] = useState(false)
+
 
   useEffect(() => {
     fetchCameras()
@@ -36,49 +36,49 @@ export default function CameraSourceSettings({
     try {
       setLoading(true)
       const response = await api.getCameras()
-      if (response.success) {
+      if (response.success && response.data) {
         setCameras(response.data)
+      } else {
+        setCameras([])
       }
     } catch (error) {
       console.error('Failed to fetch cameras:', error)
+      setCameras([])
     } finally {
       setLoading(false)
     }
   }
 
+  const applyCameraSelection = async (source: 'canon' | 'webcam', index: number) => {
+    try {
+      // Add small delay to prevent rapid-fire requests
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      const response = await api.selectCamera({
+        type: source,
+        webcamIndex: source === 'webcam' ? index : undefined
+      });
+
+      if (!response.success) {
+        console.error('Failed to select camera:', response.error);
+      }
+    } catch (error) {
+      console.error('Failed to select camera:', error);
+    }
+  };
+
   const handleCameraSourceChange = (source: 'canon' | 'webcam') => {
     setCameraSource(source)
     onChange?.({ cameraSource: source, webcamIndex })
+    // Debounce the API call
+    applyCameraSelection(source, webcamIndex)
   }
 
   const handleWebcamIndexChange = (index: number) => {
     setWebcamIndex(index)
     onChange?.({ cameraSource, webcamIndex: index })
-  }
-
-  const testCamera = async () => {
-    try {
-      setTestingCamera(true)
-      const response = await api.selectCamera({
-        type: cameraSource,
-        webcamIndex: cameraSource === 'webcam' ? webcamIndex : undefined
-      })
-      if (response.success) {
-        // Start live view briefly to test
-        await api.startLiveView()
-        setTimeout(async () => {
-          await api.stopLiveView()
-          setTestingCamera(false)
-        }, 3000)
-      } else {
-        setTestingCamera(false)
-        alert('Failed to connect to camera')
-      }
-    } catch (error) {
-      console.error('Test camera error:', error)
-      setTestingCamera(false)
-      alert('Failed to test camera')
-    }
+    // Debounce the API call
+    applyCameraSelection(cameraSource, index)
   }
 
   const canonCameras = cameras.filter((c) => c.type === 'canon')
@@ -92,11 +92,10 @@ export default function CameraSourceSettings({
       <div className="grid grid-cols-2 gap-4">
         <button
           onClick={() => handleCameraSourceChange('canon')}
-          className={`p-4 rounded-xl border-2 transition-all ${
-            cameraSource === 'canon'
-              ? 'border-blue-500 bg-blue-500/20'
-              : 'border-gray-600 bg-gray-800 hover:border-gray-500'
-          }`}
+          className={`p-4 rounded-xl border-2 transition-all ${cameraSource === 'canon'
+            ? 'border-blue-500 bg-blue-500/20'
+            : 'border-gray-600 bg-gray-800 hover:border-gray-500'
+            }`}
         >
           <div className="text-3xl mb-2">📷</div>
           <div className="font-medium text-white">Canon DSLR</div>
@@ -109,11 +108,10 @@ export default function CameraSourceSettings({
 
         <button
           onClick={() => handleCameraSourceChange('webcam')}
-          className={`p-4 rounded-xl border-2 transition-all ${
-            cameraSource === 'webcam'
-              ? 'border-blue-500 bg-blue-500/20'
-              : 'border-gray-600 bg-gray-800 hover:border-gray-500'
-          }`}
+          className={`p-4 rounded-xl border-2 transition-all ${cameraSource === 'webcam'
+            ? 'border-blue-500 bg-blue-500/20'
+            : 'border-gray-600 bg-gray-800 hover:border-gray-500'
+            }`}
         >
           <div className="text-3xl mb-2">🎥</div>
           <div className="font-medium text-white">Webcam</div>
@@ -155,18 +153,16 @@ export default function CameraSourceSettings({
             {canonCameras.map((cam, idx) => (
               <div
                 key={idx}
-                className={`p-3 rounded-lg border ${
-                  cam.connected
-                    ? 'border-green-500 bg-green-500/10'
-                    : 'border-gray-600 bg-gray-800'
-                }`}
+                className={`p-3 rounded-lg border ${cam.connected
+                  ? 'border-green-500 bg-green-500/10'
+                  : 'border-gray-600 bg-gray-800'
+                  }`}
               >
                 <div className="flex items-center justify-between">
                   <span className="text-white">{cam.name}</span>
                   <span
-                    className={`text-sm ${
-                      cam.connected ? 'text-green-400' : 'text-gray-400'
-                    }`}
+                    className={`text-sm ${cam.connected ? 'text-green-400' : 'text-gray-400'
+                      }`}
                   >
                     {cam.connected ? 'Connected' : 'Available'}
                   </span>
@@ -199,28 +195,8 @@ export default function CameraSourceSettings({
         </div>
       ) : null}
 
-      {/* Test Camera Button */}
-      <button
-        onClick={testCamera}
-        disabled={testingCamera || cameras.length === 0}
-        className={`w-full py-3 rounded-lg font-medium transition-colors ${
-          testingCamera
-            ? 'bg-blue-500/50 cursor-not-allowed'
-            : 'bg-blue-500 hover:bg-blue-600'
-        } text-white`}
-      >
-        {testingCamera ? (
-          <span className="flex items-center justify-center gap-2">
-            <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
-            Testing Camera...
-          </span>
-        ) : (
-          'Test Camera Connection'
-        )}
-      </button>
-
       {/* Info */}
-      <div className="text-sm text-gray-400 space-y-1">
+      <div className="text-sm text-gray-400 space-y-1 pt-4 border-t border-gray-700">
         <p>
           <strong>Canon DSLR:</strong> Requires Canon EOS camera connected via USB.
           Supports full manual controls (ISO, aperture, shutter speed).

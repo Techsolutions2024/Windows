@@ -168,6 +168,14 @@ void HTTPServer::setupRoutes() {
                   handleStopLiveView(req, res);
                 });
 
+  // TODO: Implement SSE live view streaming
+  /*
+  server_->Get("/api/cameras/liveview/stream",
+               [this](const httplib::Request &req, httplib::Response &res) {
+                 handleLiveViewSSE(req, res);
+               });
+  */
+
   // ==================== Capture API ====================
   server_->Post("/api/capture/photo",
                 [this](const httplib::Request &req, httplib::Response &res) {
@@ -754,7 +762,8 @@ void HTTPServer::handleSelectCamera(const httplib::Request &req,
     }
 
     if (success) {
-      res.set_content(jsonResponse(true, "Camera selected"), "application/json");
+      res.set_content(jsonResponse(true, "Camera selected"),
+                      "application/json");
     } else {
       res.status = 400;
       res.set_content(jsonError("Failed to select camera", 400),

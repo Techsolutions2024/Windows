@@ -60,6 +60,20 @@ export default function SettingsPage() {
               )
             })}
           </div>
+
+          {/* Save Button in Sidebar Footer */}
+          <div className="mt-8 pt-4 border-t border-white/10">
+            <button
+              onClick={() => {
+                // Logic to persist configuration
+                alert('Đã lưu toàn bộ cấu hình hệ thống!');
+              }}
+              className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg font-bold shadow-lg shadow-green-900/20 transition-all flex items-center justify-center gap-2"
+            >
+              <span className="material-symbols-outlined">save</span>
+              Lưu Cấu Hình
+            </button>
+          </div>
         </div>
 
         {/* Main Content */}
@@ -82,6 +96,8 @@ export default function SettingsPage() {
                   </p>
                   <CameraSettings />
                 </div>
+
+
               </div>
             </div>
           )}

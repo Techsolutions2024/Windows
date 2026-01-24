@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import EventsPage from './pages/EventsPage'
+import AttractPage from './pages/AttractPage'
 import CapturePage from './pages/CapturePage'
 import SharingPage from './pages/SharingPage'
 import SettingsPage from './pages/SettingsPage'
@@ -13,6 +14,7 @@ function App() {
       <div className="w-full h-screen bg-dark-darker text-white">
         <Routes>
           <Route path="/" element={<EventsPage />} />
+          <Route path="/attract" element={<AttractPage />} />
           <Route path="/templates" element={<TemplateLibraryPage />} />
           <Route path="/mode-selection" element={<ModeSelectionPage />} />
           <Route path="/capture" element={<CapturePage />} />

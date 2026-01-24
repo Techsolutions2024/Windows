@@ -60,6 +60,7 @@ public:
   // Broadcast methods
   void broadcastLiveView(const std::vector<uint8_t> &imageData, int width,
                          int height);
+  void broadcastBinary(const std::vector<uint8_t> &data);
   void broadcastEvent(const std::string &eventType, const std::string &data);
   void broadcastCountdown(int seconds);
   void broadcastCaptureComplete(const std::string &imagePath);
@@ -84,7 +85,6 @@ private:
   void onMessage(ConnectionHandle hdl, WsServer::message_ptr msg);
 
   void broadcast(const std::string &message);
-  void broadcastBinary(const std::vector<uint8_t> &data);
   std::string encodeBase64(const std::vector<uint8_t> &data);
 };
 

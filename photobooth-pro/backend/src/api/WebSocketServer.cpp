@@ -23,14 +23,13 @@ WebSocketServer::WebSocketServer(Application *app, int port)
   server_.set_reuse_addr(true);
 
   // Set handlers
-  server_.set_open_handler(
-      [this](ConnectionHandle hdl) { this->onOpen(hdl); });
+  server_.set_open_handler([this](ConnectionHandle hdl) { this->onOpen(hdl); });
   server_.set_close_handler(
       [this](ConnectionHandle hdl) { this->onClose(hdl); });
-  server_.set_message_handler([this](ConnectionHandle hdl,
-                                     WsServer::message_ptr msg) {
-    this->onMessage(hdl, msg);
-  });
+  server_.set_message_handler(
+      [this](ConnectionHandle hdl, WsServer::message_ptr msg) {
+        this->onMessage(hdl, msg);
+      });
 }
 
 WebSocketServer::~WebSocketServer() { stop(); }
@@ -93,8 +92,7 @@ void WebSocketServer::stop() {
 bool WebSocketServer::isRunning() const { return running_; }
 
 size_t WebSocketServer::getConnectionCount() const {
-  std::lock_guard<std::mutex> lock(
-      const_cast<std::mutex &>(connectionsMutex_));
+  std::lock_guard<std::mutex> lock(const_cast<std::mutex &>(connectionsMutex_));
   return connections_.size();
 }
 
@@ -132,9 +130,10 @@ void WebSocketServer::onMessage(ConnectionHandle hdl,
     if (type == "ping") {
       json response;
       response["type"] = "pong";
-      response["timestamp"] = std::chrono::duration_cast<std::chrono::milliseconds>(
-                                  std::chrono::system_clock::now().time_since_epoch())
-                                  .count();
+      response["timestamp"] =
+          std::chrono::duration_cast<std::chrono::milliseconds>(
+              std::chrono::system_clock::now().time_since_epoch())
+              .count();
       server_.send(hdl, response.dump(), websocketpp::frame::opcode::text);
     } else if (type == "subscribe") {
       // Client subscribes to specific events
@@ -171,21 +170,21 @@ void WebSocketServer::broadcastBinary(const std::vector<uint8_t> &data) {
   }
 }
 
+// broadcastBinary is already defined in the class as private, but I just made
+// it public in header? Wait, I made it public in header, so I should implement
+// it or use the existing implementation. Existing implementation: void
+// WebSocketServer::broadcastBinary(const std::vector<uint8_t> &data) { ... } It
+// is at line 162.
+
 void WebSocketServer::broadcastLiveView(const std::vector<uint8_t> &imageData,
                                         int width, int height) {
   if (connections_.empty()) {
     return;
   }
 
-  // Create JSON message with base64 encoded image
-  json message;
-  message["type"] = "liveview:frame";
-  message["data"]["width"] = width;
-  message["data"]["height"] = height;
-  message["data"]["format"] = "jpeg";
-  message["data"]["imageData"] = encodeBase64(imageData);
-
-  broadcast(message.dump());
+  // Send raw binary JPEG data directly
+  // The frontend handles this as a Blob -> URL
+  broadcastBinary(imageData);
 }
 
 void WebSocketServer::broadcastEvent(const std::string &eventType,

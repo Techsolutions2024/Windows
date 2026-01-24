@@ -100,6 +100,7 @@ endif()
 # Include directories
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/MultiCamCui/include
     ${EDSDK_INCLUDE_DIR}
     ${SQLITE_DIR}
     ${httplib_SOURCE_DIR}
@@ -234,6 +235,13 @@ set(SOURCES
     src/api/HTTPServer.cpp
     src/api/WebSocketServer.cpp
     src/storage/DatabaseManager.cpp
+    
+    # MultiCamCui sources (Canon SDK wrapper - exclude MultiCamCui.cpp which has main())
+    MultiCamCui/src/CameraModel.cpp
+    MultiCamCui/src/CameraEvent.cpp
+    MultiCamCui/src/FileControl.cpp
+    MultiCamCui/src/PreSetting.cpp
+    MultiCamCui/src/utility.cpp
 )
 
 # Create executable
