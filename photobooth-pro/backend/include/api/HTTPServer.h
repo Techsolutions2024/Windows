@@ -6,7 +6,6 @@
 #include <string>
 #include <thread>
 
-
 namespace httplib {
 class Server;
 struct Request;
@@ -61,6 +60,7 @@ private:
                                    httplib::Response &res);
   void handleLoadEventConfigFromFile(const httplib::Request &req,
                                      httplib::Response &res);
+  void handleUploadLayout(const httplib::Request &req, httplib::Response &res);
 
   // ==================== Camera API ====================
   void handleGetCameras(const httplib::Request &req, httplib::Response &res);

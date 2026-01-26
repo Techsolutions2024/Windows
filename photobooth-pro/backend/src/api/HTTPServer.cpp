@@ -4,9 +4,9 @@
 #include "core/Application.h"
 #include "media/BurstCaptureManager.h"
 #include "media/GifCreator.h"
+#include "media/LayoutAnalyzer.h"
 #include "storage/DatabaseManager.h"
 #include "storage/FileManager.h"
-
 
 // #define CPPHTTPLIB_OPENSSL_SUPPORT
 #include "httplib.h"
@@ -152,6 +152,12 @@ void HTTPServer::setupRoutes() {
                [this](const httplib::Request &req, httplib::Response &res) {
                  handleLoadEventConfigFromFile(req, res);
                });
+
+  // Upload layout
+  server_->Post(R"(/api/events/(\d+)/layout)",
+                [this](const httplib::Request &req, httplib::Response &res) {
+                  handleUploadLayout(req, res);
+                });
 
   // ==================== Camera API ====================
   server_->Get("/api/cameras",
@@ -621,6 +627,24 @@ void HTTPServer::handleGetEventConfig(const httplib::Request &req,
     configJson["layoutTemplate"] = config->layoutTemplate;
     configJson["cameraSource"] = config->cameraSource;
     configJson["webcamIndex"] = config->webcamIndex;
+
+    // Load slots config if exists
+    auto *fileMgr = app_->getFileManager();
+    if (fileMgr) {
+      std::string eventDir =
+          fileMgr->getEventDirectory(std::to_string(eventId));
+      std::string slotsPath = eventDir + "/slots_config.json";
+      std::ifstream i(
+          slotsPath); // Check existence implicitly or via filesystem
+      if (i.good()) {
+        try {
+          json slotsJson;
+          i >> slotsJson;
+          configJson["layoutSlots"] = slotsJson;
+        } catch (...) {
+        }
+      }
+    }
 
     json response;
     response["success"] = true;
@@ -1695,6 +1719,72 @@ void HTTPServer::handleStopVideo(const httplib::Request &req,
   setCorsHeaders(res);
   res.set_content(jsonResponse(true, "Video recording stopped (Shim)"),
                   "application/json");
+}
+
+void HTTPServer::handleUploadLayout(const httplib::Request &req,
+                                    httplib::Response &res) {
+  setCorsHeaders(res);
+
+  // Check if multipart
+  if (!req.has_file("layout")) {
+    res.status = 400;
+    res.set_content(jsonError("No layout file uploaded", 400),
+                    "application/json");
+    return;
+  }
+
+  try {
+    int eventId = std::stoi(req.matches[1]);
+    const auto &file = req.get_file_value("layout");
+
+    // Save file
+    auto *fileMgr = app_->getFileManager();
+    if (!fileMgr)
+      throw std::runtime_error("File manager not ready");
+
+    std::string eventDir = fileMgr->getEventDirectory(std::to_string(eventId));
+    if (eventDir.empty()) {
+      // Create it if not exists
+      eventDir = fileMgr->createEventDirectory(std::to_string(eventId));
+    }
+
+    std::string filename =
+        "layout.png"; // Enforce consistent name or use file.filename
+    std::string layoutPath = eventDir + "/" + filename;
+
+    {
+      std::ofstream ofs(layoutPath, std::ios::binary);
+      ofs.write(file.content.c_str(), file.content.size());
+    }
+
+    // Analyze
+    std::string jsonPath = eventDir + "/slots_config.json";
+    LayoutInfo info = LayoutAnalyzer::analyzeAndSave(layoutPath, jsonPath);
+
+    // Update event photo count based on slots
+    auto &db = app_->getDatabase();
+    auto config = db.getEventConfig(eventId);
+    if (config) {
+      EventConfig newConfig = *config;
+      newConfig.photoCount = info.photoCount;
+      // Also update layout template name
+      newConfig.layoutTemplate = filename;
+      db.updateEventConfig(eventId, newConfig);
+    }
+
+    json response;
+    response["success"] = true;
+    response["message"] = "Layout uploaded and analyzed successfully";
+    response["data"] = info.toJson();
+
+    res.set_content(response.dump(), "application/json");
+
+  } catch (const std::exception &e) {
+    res.status = 500;
+    res.set_content(
+        jsonError(std::string("Failed to process layout: ") + e.what(), 500),
+        "application/json");
+  }
 }
 
 // ==================== Static Files ====================

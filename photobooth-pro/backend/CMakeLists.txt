@@ -95,6 +95,8 @@ FetchContent_Declare(
 FetchContent_GetProperties(websocketpp)
 if(NOT websocketpp_POPULATED)
     FetchContent_Populate(websocketpp)
+endif()
+
 # libuv (required for uSockets on Windows)
 FetchContent_Declare(
     libuv
@@ -267,6 +269,7 @@ set(SOURCES
     src/storage/FileManager.cpp
     src/media/GifCreator.cpp
     src/media/BurstCaptureManager.cpp
+    src/media/LayoutAnalyzer.cpp
 
     # MultiCamCui sources (Canon SDK wrapper - exclude MultiCamCui.cpp which has main())
     MultiCamCui/src/CameraModel.cpp
