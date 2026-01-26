@@ -57,6 +57,10 @@ private:
   void handleUpdateEventConfig(const httplib::Request &req,
                                httplib::Response &res);
   void handleSearchEvents(const httplib::Request &req, httplib::Response &res);
+  void handleSaveEventConfigToFile(const httplib::Request &req,
+                                   httplib::Response &res);
+  void handleLoadEventConfigFromFile(const httplib::Request &req,
+                                     httplib::Response &res);
 
   // ==================== Camera API ====================
   void handleGetCameras(const httplib::Request &req, httplib::Response &res);
@@ -69,6 +73,16 @@ private:
   void handleStopLiveView(const httplib::Request &req, httplib::Response &res);
   void handleLiveViewSSE(const httplib::Request &req,
                          httplib::Response &res); // SSE stream
+
+  // Extended SDK Camera Settings
+  void handleGetSupportedCameraValues(const httplib::Request &req,
+                                      httplib::Response &res);
+  void handleGetExtendedCameraSettings(const httplib::Request &req,
+                                       httplib::Response &res);
+  void handleSetExtendedCameraSettings(const httplib::Request &req,
+                                       httplib::Response &res);
+  void handleSetCameraPropertyByCode(const httplib::Request &req,
+                                     httplib::Response &res);
 
   // Helper for Base64 encoding
   std::string encodeBase64(const std::vector<uint8_t> &data);

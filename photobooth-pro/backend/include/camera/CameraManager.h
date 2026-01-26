@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ICamera.h"
+#include "camera/CanonSDKCamera.h"
 #include <atomic>
 #include <memory>
 #include <mutex>
@@ -13,7 +14,7 @@ struct CameraInfo {
   std::string name;
   CameraType type;
   bool connected;
-  int webcamIndex; // Only for webcams
+  int index;  // Camera index in list
 };
 
 class CameraManager {
@@ -29,7 +30,6 @@ public:
 
   // Camera selection
   bool selectCamera(const std::string &cameraName);
-  bool selectWebcam(int deviceIndex);
   ICamera *getActiveCamera();
   std::string getActiveCameraName() const;
 
@@ -46,14 +46,25 @@ public:
   std::vector<std::string> getSupportedShutterSpeeds() const;
   std::vector<std::string> getSupportedWhiteBalances() const;
 
+  // Extended SDK methods (Canon-specific)
+  CanonSupportedValues getAllSupportedCameraValues();
+  CanonCameraSettings getExtendedCameraSettings() const;
+  bool setExtendedCameraSettings(const CanonCameraSettings& settings);
+  bool setCameraPropertyByCode(EdsPropertyID propertyID, EdsUInt32 code);
+
+  // Get Canon SDK camera (for direct access)
+  CanonSDKCamera* getCanonCamera();
+
+  // Set save directory for captures
+  void setSaveDirectory(const std::string& dir);
+
 private:
-  std::vector<std::unique_ptr<ICamera>> cameras_;
-  ICamera *activeCamera_;
+  std::unique_ptr<CanonSDKCamera> activeCamera_;
   std::mutex mutex_;
   bool initialized_;
+  std::string saveDirectory_;
 
   void detectCanonCameras();
-  void detectWebcams();
 };
 
 } // namespace photobooth

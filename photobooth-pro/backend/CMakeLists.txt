@@ -95,7 +95,33 @@ FetchContent_Declare(
 FetchContent_GetProperties(websocketpp)
 if(NOT websocketpp_POPULATED)
     FetchContent_Populate(websocketpp)
-endif()
+# libuv (required for uSockets on Windows)
+FetchContent_Declare(
+    libuv
+    GIT_REPOSITORY https://github.com/libuv/libuv.git
+    GIT_TAG v1.48.0
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(libuv)
+
+# uSockets
+FetchContent_Declare(
+    usockets
+    GIT_REPOSITORY https://github.com/uNetworking/uSockets.git
+    GIT_TAG v0.8.8
+    GIT_SHALLOW TRUE
+)
+# uSockets CMakeLists.txt handles library creation
+FetchContent_MakeAvailable(usockets)
+
+# uWebSockets
+FetchContent_Declare(
+    uwebsockets
+    GIT_REPOSITORY https://github.com/uNetworking/uWebSockets.git
+    GIT_TAG v20.48.0
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(uwebsockets)
 
 # Include directories
 include_directories(
@@ -108,6 +134,9 @@ include_directories(
     ${spdlog_SOURCE_DIR}/include
     ${websocketpp_SOURCE_DIR}
     ${asio_SOURCE_DIR}/asio/include
+    ${uwebsockets_SOURCE_DIR}/src
+    ${usockets_SOURCE_DIR}/src
+    ${libuv_SOURCE_DIR}/include
 )
 
 # ============================================================================
@@ -230,12 +259,15 @@ set(SOURCES
     src/main.cpp
     src/core/Application.cpp
     src/camera/CameraManager.cpp
-    src/camera/CanonCamera.cpp
-    src/camera/WebcamCamera.cpp
+    src/camera/CanonSDKCamera.cpp
     src/api/HTTPServer.cpp
     src/api/WebSocketServer.cpp
+    src/server/LiveViewServer.cpp
     src/storage/DatabaseManager.cpp
-    
+    src/storage/FileManager.cpp
+    src/media/GifCreator.cpp
+    src/media/BurstCaptureManager.cpp
+
     # MultiCamCui sources (Canon SDK wrapper - exclude MultiCamCui.cpp which has main())
     MultiCamCui/src/CameraModel.cpp
     MultiCamCui/src/CameraEvent.cpp
@@ -249,6 +281,9 @@ add_executable(photobooth-server ${SOURCES} ${SQLITE_SOURCES})
 
 # Compile definitions
 target_compile_definitions(photobooth-server PRIVATE
+    WIN32_LEAN_AND_MEAN
+    _WIN32_WINNT=0x0601
+    NOMINMAX
     SQLITE_THREADSAFE=1
     SQLITE_ENABLE_FTS5
     SQLITE_ENABLE_JSON1
@@ -264,6 +299,8 @@ target_link_libraries(photobooth-server
     spdlog::spdlog
     ws2_32
     wsock32
+    uSockets
+    uv_a
 )
 
 if(OpenCV_FOUND)

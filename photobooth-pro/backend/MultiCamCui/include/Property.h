@@ -6,7 +6,7 @@
 #include "EDSDK.h"
 #include "EDSDKTypes.h"
 
-std::map<EdsUInt32, const char *> iso_table = {
+inline std::map<EdsUInt32, const char *> iso_table = {
     {0x00, "Auto"},
     {0x28, "6"},
     {0x30, "12"},
@@ -48,7 +48,7 @@ std::map<EdsUInt32, const char *> iso_table = {
     {0xb0, "819200"},
     {0xffffffff, "unknown value"}};
 
-std::map<EdsUInt32, const char *> tv_table = {
+inline std::map<EdsUInt32, const char *> tv_table = {
     {0x04, "Auto"},
     {0x0c, "Bulb"},
     {0x10, "30''"},
@@ -138,7 +138,7 @@ std::map<EdsUInt32, const char *> tv_table = {
     {0xB8, "64000"},
     {0xffffffff, "unknown value"}};
 
-std::map<EdsUInt32, const char *> av_table = {
+inline std::map<EdsUInt32, const char *> av_table = {
     {0x00, ""},
     {0x08, "1.0"},
     {0x0B, "1.1"},
@@ -198,7 +198,7 @@ std::map<EdsUInt32, const char *> av_table = {
     {0xFF, "Auto"},
     {0xffffffff, "unknown value"}};
 
-std::map<EdsUInt32, const char *> whitebalance_table = {
+inline std::map<EdsUInt32, const char *> whitebalance_table = {
     {0, "Auto: Ambience priority"},
     {1, "Daylight"},
     {2, "Cloudy"},
@@ -223,7 +223,7 @@ std::map<EdsUInt32, const char *> whitebalance_table = {
     {25, "Color temp. 3"},
     {26, "Color temp. 4"}};
 
-std::map<EdsUInt32, const char *> drivemode_table = {
+inline std::map<EdsUInt32, const char *> drivemode_table = {
     {0x00, "Single shooting"},
     {0x01, "Medium speed continuous"},
     {0x04, "High speed continuous"},
@@ -238,7 +238,7 @@ std::map<EdsUInt32, const char *> drivemode_table = {
     {0x15, "Silent HS continuous"},
     {0x16, "Silent(Soft) LS continuous"}};
 
-std::map<EdsUInt32, const char *> ExposureComp_table = {
+inline std::map<EdsUInt32, const char *> ExposureComp_table = {
     {0x28, "+5"},
     {0x25, "+4 2/3"},
     {0x24, "+4 1/2"},
@@ -282,7 +282,7 @@ std::map<EdsUInt32, const char *> ExposureComp_table = {
     {0xD8, "-5"},
     {0xffffffff, "unknown"}};
 
-std::map<EdsUInt32, const char *> AEmode_table = {
+inline std::map<EdsUInt32, const char *> AEmode_table = {
     {0, "P"},
     {1, "Tv"},
     {2, "Av"},
@@ -347,26 +347,26 @@ std::map<EdsUInt32, const char *> AEmode_table = {
     {67, "Smooth skin movie"},
     {0xffffffff, "unknown value"}};
 
-std::map<EdsUInt32, const char *> AFmode_table = {
+inline std::map<EdsUInt32, const char *> AFmode_table = {
     {0, "One-Shot AF"},
     {1, "AI Servo AF"},
     {2, "AI Focus AF"},
     {3, "Manual Focus"},
     {0xffffffff, "unknown"}};
 
-std::map<EdsUInt32, const char *> Aspect_table = {
+inline std::map<EdsUInt32, const char *> Aspect_table = {
     {0x0000, "Full-frame"},
     {0x0001, "1:1(aspect ratio)"},
     {0x0002, "4:3(aspect ratio)"},
     {0x0007, "16:9(aspect ratio)"},
     {0x000d, "1.6x(crop)"}};
 
-std::map<EdsUInt32, const char *> SaveTo_table = {
+inline std::map<EdsUInt32, const char *> SaveTo_table = {
     {1, "Save To Camera"},
     {2, "Save To Host"},
     {3, "Both"}};
 
-std::map<EdsUInt32, const char *> EvfOutputDevice_table = {
+inline std::map<EdsUInt32, const char *> EvfOutputDevice_table = {
     {0, "OFF"},
     {1, "Output to TFT Monitor"},
     {2, "Output to Remote PC"},
@@ -375,7 +375,7 @@ std::map<EdsUInt32, const char *> EvfOutputDevice_table = {
     {9, "Output to TFT Monitor & Remote PC (small size)"},
 };
 
-std::map<EdsUInt32, const char *> ImageQuality_table = {
+inline std::map<EdsUInt32, const char *> ImageQuality_table = {
     {EdsImageQuality_LJ, "Jpeg Large"},
     {EdsImageQuality_MJ, "Jpeg Middle"},
     {EdsImageQuality_M1J, "Jpeg Middle1"},
@@ -529,7 +529,7 @@ std::map<EdsUInt32, const char *> ImageQuality_table = {
     {EdsImageQuality_CRHEIFS2F, "CRAW + HEIF Small2 Fine"},
 };
 
-std::map<EdsUInt64, const char*> MovieQualityEx_table = {
+inline std::map<EdsUInt64, const char*> MovieQualityEx_table = {
     {0x0000020000011830, "FHD 23.98P LGOP"},
     {0x0000020000511830, "4K  23.98P LGOP"},
     {0x0000040000011930, "FHD 25.00P LGOP"},
@@ -545,7 +545,7 @@ std::map<EdsUInt64, const char*> MovieQualityEx_table = {
     {0x0000090000017830, "FHD 119.9P LGOP"},
 };
       
-std::map<EdsUInt64, const char*> MovieQualitySF_table = {
+inline std::map<EdsUInt64, const char*> MovieQualitySF_table = {
   
     // S&F movie
     {0x0000020000010130, "FHD 23.98P LGOP  1sf"},
@@ -626,7 +626,7 @@ std::map<EdsUInt64, const char*> MovieQualitySF_table = {
 
 };
 
-std::map<EdsUInt32, const char *> PictureStyle_table = {
+inline std::map<EdsUInt32, const char *> PictureStyle_table = {
     {kEdsPictureStyle_Standard, "Standard "},
     {kEdsPictureStyle_Portrait, "Portrait"},
     {kEdsPictureStyle_Landscape, "Landscape"},
@@ -642,14 +642,14 @@ std::map<EdsUInt32, const char *> PictureStyle_table = {
     {kEdsPictureStyle_PC2, "PC2"},
     {kEdsPictureStyle_PC3, "PC3"}};
 
-std::map<EdsUInt32, const char *> DigitalZoom_table = {
+inline std::map<EdsUInt32, const char *> DigitalZoom_table = {
     {10, "OFF "},
     {15, "1.5x"},
     {20, "2.0x"},
     {30, "3.0x"},
     {40, "4.0x"}};
 
-std::map<EdsUInt32, const char *> ColorFilter_table = {
+inline std::map<EdsUInt32, const char *> ColorFilter_table = {
     {0x00000000, "OFF"},
     {0x00000001, "PaleTeal&Orange"},
     {0x00000002, "RetroGreen"},
@@ -666,7 +666,7 @@ std::map<EdsUInt32, const char *> ColorFilter_table = {
     {0x0000000d, "TastyWarm"},
     {0x0000000e, "AccentRed"}};
 
-std::map<EdsUInt32, const char *> BrightnessSetting_table = {
+inline std::map<EdsUInt32, const char *> BrightnessSetting_table = {
     {0x00000001, "-3"},
     {0x00000002, "-2"},
     {0x00000003, "-1"},
@@ -675,11 +675,11 @@ std::map<EdsUInt32, const char *> BrightnessSetting_table = {
     {0x00000006, "+2"},
     {0x00000007, "+3"}};
 
-std::map<EdsUInt32, const char*> AfLockState_table = {
+inline std::map<EdsUInt32, const char*> AfLockState_table = {
     {0x00000000, "Disable"},
     {0x00000001, "Enable"} };
 
-std::map<EdsUInt32, const char*> ScreenOffTime_table = {
+inline std::map<EdsUInt32, const char*> ScreenOffTime_table = {
     {0x00000005, "  5 sec"},
     {0x0000000F, " 15 sec"},
     {0x0000001E, " 30 sec"},
@@ -690,12 +690,12 @@ std::map<EdsUInt32, const char*> ScreenOffTime_table = {
     {0x00000708, " 30 min"},
     {0x0000FFFF, "disable"} };
 
-std::map<EdsUInt32, const char*> ViewfinderOffTime_table = {
+inline std::map<EdsUInt32, const char*> ViewfinderOffTime_table = {
     { 60, "  1 min"},
     {180, "  3 min"},
     {  0, "disable"} };
 
-std::map<EdsUInt32, const char*> ScreenDimmerTime_table = {
+inline std::map<EdsUInt32, const char*> ScreenDimmerTime_table = {
     {0x00000005,"  5 sec"},
     {0x0000000A," 10 sec"},
     {0x0000000F," 15 sec"},
@@ -704,7 +704,7 @@ std::map<EdsUInt32, const char*> ScreenDimmerTime_table = {
     {0x0000001E," 30 sec"},
     {0x0000FFFF,"disable"}};
 
-std::map<EdsUInt32, const char*> AutoPowerOffSetting_table = {
+inline std::map<EdsUInt32, const char*> AutoPowerOffSetting_table = {
     {0x00," Off"},
     {0x0F," 15 sec"},
     {0x1E," 30 sec"},
@@ -715,7 +715,7 @@ std::map<EdsUInt32, const char*> AutoPowerOffSetting_table = {
     {0x708," 30 min"},
     {0xFFFFFFFF," Shutdown"}};
     
-std::map<EdsUInt32, const char*> Powerzoom_table = {
+inline std::map<EdsUInt32, const char*> Powerzoom_table = {
     {0x00000001," 1"},
     {0x00000002," 2"},
     {0x00000003," 3"},
@@ -733,7 +733,7 @@ std::map<EdsUInt32, const char*> Powerzoom_table = {
     {0x0000000f,"15"},
     {0xFFFFFFFF," Shutdown"}};
 
-std::map<EdsUInt32, const char*> MovieRecVolume_table = {
+inline std::map<EdsUInt32, const char*> MovieRecVolume_table = {
     {0x00, "0"},
     {0x01, "1"},
     {0x02, "2"},
@@ -799,12 +799,12 @@ std::map<EdsUInt32, const char*> MovieRecVolume_table = {
     {0x3E, "62"},
     {0x3F, "63"} };
 
-std::map<EdsUInt32, const char*> StillFileNameSetting_table = {
+inline std::map<EdsUInt32, const char*> StillFileNameSetting_table = {
     {0x00," Preset code"},
     {0x01," User setting1"},
     {0x02," User setting2"} };
 
 
-std::map<EdsUInt32, const char*> IBIS_HighResoShot_table = {
+inline std::map<EdsUInt32, const char*> IBIS_HighResoShot_table = {
     {0x00000000, "Disable"},
     {0x00000001, "Enable"} };
