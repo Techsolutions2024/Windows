@@ -32,33 +32,19 @@
 
 ---
 
-## Module 2: Camera API (IN PROGRESS)
+## Module 2: Camera API (PENDING)
 
 ### Endpoints
 - [ ] GET /api/cameras - Danh sách cameras
 - [ ] POST /api/cameras/select - Chọn camera
 - [ ] GET /api/cameras/settings - Lấy settings
 - [ ] PUT /api/cameras/settings - Cập nhật settings
-- [x] POST /api/cameras/liveview/start - Bắt đầu live view (uWebSockets on port 8081)
-- [x] POST /api/cameras/liveview/stop - Dừng live view
-
-### LiveView Implementation ✅
-- [x] Created uWebSockets server on port 8081
-- [x] Integrated OpenCV for 720p resize and JPEG encoding (quality 70)
-- [x] Implemented flow control with READY signal from frontend
-- [x] Created Web Worker (liveview.worker.ts) for binary streaming
-- [x] Created LiveViewCanvas component with ImageBitmap transfer
-- [x] Integrated into CapturePage
+- [ ] POST /api/cameras/liveview/start - Bắt đầu live view
+- [ ] POST /api/cameras/liveview/stop - Dừng live view
 
 ### Files to Update
-- [x] backend/include/server/LiveViewServer.h (NEW)
-- [x] backend/src/server/LiveViewServer.cpp (NEW)
-- [x] backend/src/camera/CanonSDKCamera.cpp (UPDATED)
-- [x] backend/CMakeLists.txt (UPDATED - added uWebSockets, uSockets, libuv)
-- [x] frontend/src/liveview.worker.ts (NEW)
-- [x] frontend/src/components/LiveViewCanvas.tsx (NEW)
-- [x] frontend/src/pages/CapturePage.tsx (UPDATED)
 - [ ] backend/src/camera/CameraManager.cpp
+- [ ] backend/src/camera/CanonCamera.cpp
 - [ ] backend/src/camera/WebcamCamera.cpp
 
 ---
@@ -173,6 +159,4 @@ cmake --build .
 
 Server will start on:
 - HTTP: http://localhost:8080
-- WebSocket: ws://localhost:8082
-- LiveView (uWebSockets): ws://localhost:8081
-
+- WebSocket: ws://localhost:8081

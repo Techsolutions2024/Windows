@@ -1,12 +1,8 @@
 #include "api/HTTPServer.h"
-#include "camera/CameraManager.h"
-#include "camera/CanonSDKCamera.h"
 #include "core/Application.h"
-#include "media/BurstCaptureManager.h"
-#include "media/GifCreator.h"
-#include "media/LayoutAnalyzer.h"
 #include "storage/DatabaseManager.h"
 #include "storage/FileManager.h"
+#include "image/LayoutAnalyzer.h"
 
 // #define CPPHTTPLIB_OPENSSL_SUPPORT
 #include "httplib.h"
@@ -142,23 +138,6 @@ void HTTPServer::setupRoutes() {
                  handleSearchEvents(req, res);
                });
 
-  // Save/Load event config to/from file
-  server_->Post(R"(/api/events/(\d+)/save-config)",
-                [this](const httplib::Request &req, httplib::Response &res) {
-                  handleSaveEventConfigToFile(req, res);
-                });
-
-  server_->Get(R"(/api/events/(\d+)/load-config)",
-               [this](const httplib::Request &req, httplib::Response &res) {
-                 handleLoadEventConfigFromFile(req, res);
-               });
-
-  // Upload layout
-  server_->Post(R"(/api/events/(\d+)/layout)",
-                [this](const httplib::Request &req, httplib::Response &res) {
-                  handleUploadLayout(req, res);
-                });
-
   // ==================== Camera API ====================
   server_->Get("/api/cameras",
                [this](const httplib::Request &req, httplib::Response &res) {
@@ -188,35 +167,6 @@ void HTTPServer::setupRoutes() {
   server_->Post("/api/cameras/liveview/stop",
                 [this](const httplib::Request &req, httplib::Response &res) {
                   handleStopLiveView(req, res);
-                });
-
-  // TODO: Implement SSE live view streaming
-  /*
-  server_->Get("/api/cameras/liveview/stream",
-               [this](const httplib::Request &req, httplib::Response &res) {
-                 handleLiveViewSSE(req, res);
-               });
-  */
-
-  // Extended SDK Camera Settings
-  server_->Get("/api/cameras/settings/supported",
-               [this](const httplib::Request &req, httplib::Response &res) {
-                 handleGetSupportedCameraValues(req, res);
-               });
-
-  server_->Get("/api/cameras/settings/extended",
-               [this](const httplib::Request &req, httplib::Response &res) {
-                 handleGetExtendedCameraSettings(req, res);
-               });
-
-  server_->Put("/api/cameras/settings/extended",
-               [this](const httplib::Request &req, httplib::Response &res) {
-                 handleSetExtendedCameraSettings(req, res);
-               });
-
-  server_->Post("/api/cameras/property",
-                [this](const httplib::Request &req, httplib::Response &res) {
-                  handleSetCameraPropertyByCode(req, res);
                 });
 
   // ==================== Capture API ====================
@@ -329,6 +279,27 @@ void HTTPServer::setupRoutes() {
                  handleGetNetworkStatus(req, res);
                });
 
+  // ==================== Layout API ====================
+  server_->Post("/api/layouts/analyze",
+                [this](const httplib::Request &req, httplib::Response &res) {
+                  handleAnalyzeLayout(req, res);
+                });
+
+  server_->Post("/api/layouts/compose",
+                [this](const httplib::Request &req, httplib::Response &res) {
+                  handleComposePhotos(req, res);
+                });
+
+  server_->Get(R"(/api/layouts/(\w+)/slots)",
+               [this](const httplib::Request &req, httplib::Response &res) {
+                 handleGetLayoutSlots(req, res);
+               });
+
+  server_->Post(R"(/api/layouts/(\w+)/config)",
+                [this](const httplib::Request &req, httplib::Response &res) {
+                  handleSaveLayoutConfig(req, res);
+                });
+
   // ==================== Static Files ====================
   server_->set_mount_point("/", "./frontend/dist");
 
@@ -401,6 +372,10 @@ void HTTPServer::handleCreateEvent(const httplib::Request &req,
     int eventId = db.createEvent(name, location, eventDate);
 
     if (eventId > 0) {
+      // Ensure event folder structure is created
+      FileManager fm;
+      fm.initializeEvent(std::to_string(eventId));
+
       auto event = db.getEvent(eventId);
       if (event) {
         json eventJson;
@@ -456,21 +431,32 @@ void HTTPServer::handleGetEvent(const httplib::Request &req,
 
     // Include full config
     json configJson;
+    
+    // Try to load full config from file system first
+    FileManager fm;
+    std::string fileConfigStr = fm.loadEventFullConfig(std::to_string(eventId));
+    if (fileConfigStr.length() > 2) { // Contains more than "{}"
+        try {
+            configJson = json::parse(fileConfigStr);
+        } catch (...) {
+            // Fallback to DB config if file parsing fails
+        }
+    }
+    
+    // Merge or fallback to DB config if needed
+    // Note: The file config should be the source of truth for detailed settings
+    // like printSettings, displaySettings if we saved them there.
+    
+    // Ensure DB fields are also present if not in file
     configJson["eventId"] = event->config.eventId;
-    configJson["startScreenImage"] = event->config.startScreenImage;
-    configJson["captureMode"] = event->config.captureMode;
-    configJson["photoEnabled"] = event->config.photoEnabled;
-    configJson["gifEnabled"] = event->config.gifEnabled;
-    configJson["boomerangEnabled"] = event->config.boomerangEnabled;
-    configJson["videoEnabled"] = event->config.videoEnabled;
-    configJson["effectsConfig"] = event->config.effectsConfig;
-    configJson["propsConfig"] = event->config.propsConfig;
-    configJson["beautyFilterConfig"] = event->config.beautyFilterConfig;
-    configJson["watermarkConfig"] = event->config.watermarkConfig;
-    configJson["postProcessConfig"] = event->config.postProcessConfig;
-    configJson["countdownSeconds"] = event->config.countdownSeconds;
-    configJson["photoCount"] = event->config.photoCount;
-    configJson["layoutTemplate"] = event->config.layoutTemplate;
+    
+    if (!configJson.contains("startScreenImage")) configJson["startScreenImage"] = event->config.startScreenImage;
+    if (!configJson.contains("captureMode")) configJson["captureMode"] = event->config.captureMode;
+    if (!configJson.contains("photoEnabled")) configJson["photoEnabled"] = event->config.photoEnabled;
+    if (!configJson.contains("countdownSeconds")) configJson["countdownSeconds"] = event->config.countdownSeconds;
+    if (!configJson.contains("photoCount")) configJson["photoCount"] = event->config.photoCount;
+    // ... add more fallbacks if strictly needed, but usually file config overrides.
+
     eventJson["config"] = configJson;
 
     json response;
@@ -549,6 +535,10 @@ void HTTPServer::handleDeleteEvent(const httplib::Request &req,
     return;
   }
 
+  // Also delete directory
+  FileManager fm;
+  fm.deleteEvent(std::to_string(eventId));
+
   if (db.deleteEvent(eventId)) {
     json response;
     response["success"] = true;
@@ -582,6 +572,7 @@ void HTTPServer::handleDuplicateEvent(const httplib::Request &req,
     std::string newName = body.value("name", originalEvent->name + " (Copy)");
 
     if (db.duplicateEvent(eventId, newName)) {
+        // TODO: Also duplicate file system config if we want to be thorough
       json response;
       response["success"] = true;
       response["message"] = "Event duplicated successfully";
@@ -610,41 +601,34 @@ void HTTPServer::handleGetEventConfig(const httplib::Request &req,
 
   if (config) {
     json configJson;
-    configJson["eventId"] = config->eventId;
-    configJson["startScreenImage"] = config->startScreenImage;
-    configJson["captureMode"] = config->captureMode;
-    configJson["photoEnabled"] = config->photoEnabled;
-    configJson["gifEnabled"] = config->gifEnabled;
-    configJson["boomerangEnabled"] = config->boomerangEnabled;
-    configJson["videoEnabled"] = config->videoEnabled;
-    configJson["effectsConfig"] = config->effectsConfig;
-    configJson["propsConfig"] = config->propsConfig;
-    configJson["beautyFilterConfig"] = config->beautyFilterConfig;
-    configJson["watermarkConfig"] = config->watermarkConfig;
-    configJson["postProcessConfig"] = config->postProcessConfig;
-    configJson["countdownSeconds"] = config->countdownSeconds;
-    configJson["photoCount"] = config->photoCount;
-    configJson["layoutTemplate"] = config->layoutTemplate;
-    configJson["cameraSource"] = config->cameraSource;
-    configJson["webcamIndex"] = config->webcamIndex;
-
-    // Load slots config if exists
-    auto *fileMgr = app_->getFileManager();
-    if (fileMgr) {
-      std::string eventDir =
-          fileMgr->getEventDirectory(std::to_string(eventId));
-      std::string slotsPath = eventDir + "/slots_config.json";
-      std::ifstream i(
-          slotsPath); // Check existence implicitly or via filesystem
-      if (i.good()) {
+    
+    // Try to load full config from file system
+    FileManager fm;
+    std::string fileConfigStr = fm.loadEventFullConfig(std::to_string(eventId));
+    if (fileConfigStr.length() > 2) {
         try {
-          json slotsJson;
-          i >> slotsJson;
-          configJson["layoutSlots"] = slotsJson;
-        } catch (...) {
-        }
-      }
+            configJson = json::parse(fileConfigStr);
+        } catch(...) {}
     }
+
+    // Merge DB keys if missing
+    configJson["eventId"] = config->eventId;
+    if (!configJson.contains("startScreenImage")) configJson["startScreenImage"] = config->startScreenImage;
+    if (!configJson.contains("captureMode")) configJson["captureMode"] = config->captureMode;
+    if (!configJson.contains("photoEnabled")) configJson["photoEnabled"] = config->photoEnabled;
+    if (!configJson.contains("gifEnabled")) configJson["gifEnabled"] = config->gifEnabled;
+    if (!configJson.contains("boomerangEnabled")) configJson["boomerangEnabled"] = config->boomerangEnabled;
+    if (!configJson.contains("videoEnabled")) configJson["videoEnabled"] = config->videoEnabled;
+    if (!configJson.contains("effectsConfig")) configJson["effectsConfig"] = config->effectsConfig;
+    if (!configJson.contains("propsConfig")) configJson["propsConfig"] = config->propsConfig;
+    if (!configJson.contains("beautyFilterConfig")) configJson["beautyFilterConfig"] = config->beautyFilterConfig;
+    if (!configJson.contains("watermarkConfig")) configJson["watermarkConfig"] = config->watermarkConfig;
+    if (!configJson.contains("postProcessConfig")) configJson["postProcessConfig"] = config->postProcessConfig;
+    if (!configJson.contains("countdownSeconds")) configJson["countdownSeconds"] = config->countdownSeconds;
+    if (!configJson.contains("photoCount")) configJson["photoCount"] = config->photoCount;
+    if (!configJson.contains("layoutTemplate")) configJson["layoutTemplate"] = config->layoutTemplate;
+    if (!configJson.contains("cameraSource")) configJson["cameraSource"] = config->cameraSource;
+    if (!configJson.contains("webcamIndex")) configJson["webcamIndex"] = config->webcamIndex;
 
     json response;
     response["success"] = true;
@@ -664,6 +648,11 @@ void HTTPServer::handleUpdateEventConfig(const httplib::Request &req,
 
   try {
     int eventId = std::stoi(req.matches[1]);
+    
+    // Save full JSON to file system first
+    FileManager fm;
+    fm.saveEventFullConfig(std::to_string(eventId), req.body);
+    
     json body = json::parse(req.body);
 
     auto &db = app_->getDatabase();
@@ -759,87 +748,6 @@ void HTTPServer::handleSearchEvents(const httplib::Request &req,
   res.set_content(response.dump(), "application/json");
 }
 
-void HTTPServer::handleSaveEventConfigToFile(const httplib::Request &req,
-                                             httplib::Response &res) {
-  setCorsHeaders(res);
-
-  try {
-    int eventId = std::stoi(req.matches[1]);
-    json body = json::parse(req.body);
-
-    auto *fileMgr = app_->getFileManager();
-    if (!fileMgr) {
-      res.status = 500;
-      res.set_content(jsonError("File Manager not initialized", 500),
-                      "application/json");
-      return;
-    }
-
-    std::string eventIdStr = std::to_string(eventId);
-
-    // Create event directory structure
-    std::string eventPath = fileMgr->createEventDirectory(eventIdStr);
-    if (eventPath.empty()) {
-      res.status = 500;
-      res.set_content(jsonError("Failed to create event directory", 500),
-                      "application/json");
-      return;
-    }
-
-    // Save the configuration to file
-    if (fileMgr->saveEventConfig(eventIdStr, body)) {
-      std::string configPath = fileMgr->getEventConfigPath(eventIdStr);
-
-      json response;
-      response["success"] = true;
-      response["message"] = "Event configuration saved to file";
-      response["data"] = {{"path", configPath}};
-      res.set_content(response.dump(), "application/json");
-    } else {
-      res.status = 500;
-      res.set_content(jsonError("Failed to save event configuration", 500),
-                      "application/json");
-    }
-  } catch (const std::exception &e) {
-    res.status = 400;
-    res.set_content(jsonError(e.what(), 400), "application/json");
-  }
-}
-
-void HTTPServer::handleLoadEventConfigFromFile(const httplib::Request &req,
-                                               httplib::Response &res) {
-  setCorsHeaders(res);
-
-  try {
-    int eventId = std::stoi(req.matches[1]);
-    std::string eventIdStr = std::to_string(eventId);
-
-    auto *fileMgr = app_->getFileManager();
-    if (!fileMgr) {
-      res.status = 500;
-      res.set_content(jsonError("File Manager not initialized", 500),
-                      "application/json");
-      return;
-    }
-
-    json config = fileMgr->loadEventConfig(eventIdStr);
-
-    if (!config.empty()) {
-      json response;
-      response["success"] = true;
-      response["data"] = config;
-      res.set_content(response.dump(), "application/json");
-    } else {
-      res.status = 404;
-      res.set_content(jsonError("Event configuration file not found", 404),
-                      "application/json");
-    }
-  } catch (const std::exception &e) {
-    res.status = 400;
-    res.set_content(jsonError(e.what(), 400), "application/json");
-  }
-}
-
 // ==================== Camera API ====================
 
 void HTTPServer::handleGetCameras(const httplib::Request &req,
@@ -848,16 +756,15 @@ void HTTPServer::handleGetCameras(const httplib::Request &req,
 
   json camerasJson = json::array();
 
-  // Get Canon cameras from CameraManager (only Canon SDK cameras)
+  // Get Canon cameras from CameraManager
   auto *camMgr = app_->getCameraManager();
   if (camMgr) {
     auto cameras = camMgr->getAvailableCameras();
     for (const auto &cam : cameras) {
       json camJson;
       camJson["name"] = cam.name;
-      camJson["type"] = "canon";
+      camJson["type"] = cam.type == CameraType::Canon ? "canon" : "webcam";
       camJson["connected"] = cam.connected;
-      camJson["index"] = cam.index;
       camerasJson.push_back(camJson);
     }
   }
@@ -874,7 +781,8 @@ void HTTPServer::handleSelectCamera(const httplib::Request &req,
 
   try {
     json body = json::parse(req.body);
-    std::string cameraName = body.value("name", "");
+    std::string cameraType = body.value("type", "canon");
+    int webcamIndex = body.value("webcamIndex", 0);
 
     auto *camMgr = app_->getCameraManager();
     if (!camMgr) {
@@ -884,17 +792,19 @@ void HTTPServer::handleSelectCamera(const httplib::Request &req,
       return;
     }
 
-    bool success = camMgr->selectCamera(cameraName);
+    bool success = false;
+    if (cameraType == "webcam") {
+      success = camMgr->selectWebcam(webcamIndex);
+    } else {
+      std::string cameraName = body.value("name", "");
+      success = camMgr->selectCamera(cameraName);
+    }
 
     if (success) {
-      json response;
-      response["success"] = true;
-      response["message"] = "Canon camera selected";
-      response["data"] = {{"name", camMgr->getActiveCameraName()}};
-      res.set_content(response.dump(), "application/json");
+      res.set_content(jsonResponse(true, "Camera selected"), "application/json");
     } else {
       res.status = 400;
-      res.set_content(jsonError("Failed to select Canon camera", 400),
+      res.set_content(jsonError("Failed to select camera", 400),
                       "application/json");
     }
   } catch (const std::exception &e) {
@@ -977,19 +887,11 @@ void HTTPServer::handleStartLiveView(const httplib::Request &req,
   setCorsHeaders(res);
 
   auto *ws = app_->getWebSocketServer();
-  auto *camMgr = app_->getCameraManager();
-
-  if (camMgr && ws) {
-    // Define callback to broadcast frames
-    auto callback = [ws](const std::vector<uint8_t> &data, int w, int h) {
-      ws->broadcastLiveView(data, w, h);
-    };
-
-    if (camMgr->startLiveView(callback)) {
-      res.set_content(jsonResponse(true, "Live view started"),
-                      "application/json");
-      return;
-    }
+  if (ws) {
+    ws->startLiveViewBroadcast();
+    res.set_content(jsonResponse(true, "Live view started"),
+                    "application/json");
+    return;
   }
 
   res.status = 500;
@@ -1001,199 +903,15 @@ void HTTPServer::handleStopLiveView(const httplib::Request &req,
                                     httplib::Response &res) {
   setCorsHeaders(res);
 
-  auto *camMgr = app_->getCameraManager();
-  if (camMgr) {
-    camMgr->stopLiveView();
+  auto *ws = app_->getWebSocketServer();
+  if (ws) {
+    ws->stopLiveViewBroadcast();
     res.set_content(jsonResponse(true, "Live view stopped"),
                     "application/json");
   } else {
     res.status = 500;
-    res.set_content(jsonError("Camera Manager not initialized", 500),
+    res.set_content(jsonError("WebSocket server not available", 500),
                     "application/json");
-  }
-}
-
-// ==================== Extended SDK Camera Settings ====================
-
-void HTTPServer::handleGetSupportedCameraValues(const httplib::Request &req,
-                                                httplib::Response &res) {
-  setCorsHeaders(res);
-
-  auto *camMgr = app_->getCameraManager();
-  if (!camMgr) {
-    res.status = 500;
-    res.set_content(jsonError("Camera Manager not initialized", 500),
-                    "application/json");
-    return;
-  }
-
-  CanonSupportedValues values = camMgr->getAllSupportedCameraValues();
-
-  json valuesJson;
-
-  // Convert each vector of SDKOption to JSON array
-  auto optionsToJson = [](const std::vector<SDKOption> &options) {
-    json arr = json::array();
-    for (const auto &opt : options) {
-      arr.push_back({{"code", opt.code}, {"label", opt.label}});
-    }
-    return arr;
-  };
-
-  valuesJson["iso"] = optionsToJson(values.iso);
-  valuesJson["aperture"] = optionsToJson(values.aperture);
-  valuesJson["shutterSpeed"] = optionsToJson(values.shutterSpeed);
-  valuesJson["exposureComp"] = optionsToJson(values.exposureComp);
-  valuesJson["whiteBalance"] = optionsToJson(values.whiteBalance);
-  valuesJson["pictureStyle"] = optionsToJson(values.pictureStyle);
-  valuesJson["afMode"] = optionsToJson(values.afMode);
-  valuesJson["imageQuality"] = optionsToJson(values.imageQuality);
-  valuesJson["driveMode"] = optionsToJson(values.driveMode);
-  valuesJson["aeMode"] = optionsToJson(values.aeMode);
-
-  json response;
-  response["success"] = true;
-  response["data"] = valuesJson;
-  res.set_content(response.dump(), "application/json");
-}
-
-void HTTPServer::handleGetExtendedCameraSettings(const httplib::Request &req,
-                                                 httplib::Response &res) {
-  setCorsHeaders(res);
-
-  auto *camMgr = app_->getCameraManager();
-  if (!camMgr) {
-    res.status = 500;
-    res.set_content(jsonError("Camera Manager not initialized", 500),
-                    "application/json");
-    return;
-  }
-
-  CanonCameraSettings settings = camMgr->getExtendedCameraSettings();
-
-  json settingsJson;
-  settingsJson["isoCode"] = settings.isoCode;
-  settingsJson["apertureCode"] = settings.apertureCode;
-  settingsJson["shutterSpeedCode"] = settings.shutterSpeedCode;
-  settingsJson["exposureCompCode"] = settings.exposureCompCode;
-  settingsJson["meteringModeCode"] = settings.meteringModeCode;
-  settingsJson["aeModeCode"] = settings.aeModeCode;
-  settingsJson["whiteBalanceCode"] = settings.whiteBalanceCode;
-  settingsJson["pictureStyleCode"] = settings.pictureStyleCode;
-  settingsJson["afModeCode"] = settings.afModeCode;
-  settingsJson["imageQualityCode"] = settings.imageQualityCode;
-  settingsJson["driveModeCode"] = settings.driveModeCode;
-  settingsJson["evfOutputDevice"] = settings.evfOutputDevice;
-  settingsJson["evfZoom"] = settings.evfZoom;
-  settingsJson["mirror"] = settings.mirror;
-  settingsJson["rotation"] = settings.rotation;
-
-  json response;
-  response["success"] = true;
-  response["data"] = settingsJson;
-  res.set_content(response.dump(), "application/json");
-}
-
-void HTTPServer::handleSetExtendedCameraSettings(const httplib::Request &req,
-                                                 httplib::Response &res) {
-  setCorsHeaders(res);
-
-  try {
-    json body = json::parse(req.body);
-
-    auto *camMgr = app_->getCameraManager();
-    if (!camMgr) {
-      res.status = 500;
-      res.set_content(jsonError("Camera Manager not initialized", 500),
-                      "application/json");
-      return;
-    }
-
-    CanonCameraSettings settings = camMgr->getExtendedCameraSettings();
-
-    // Update only provided fields
-    if (body.contains("isoCode"))
-      settings.isoCode = body["isoCode"];
-    if (body.contains("apertureCode"))
-      settings.apertureCode = body["apertureCode"];
-    if (body.contains("shutterSpeedCode"))
-      settings.shutterSpeedCode = body["shutterSpeedCode"];
-    if (body.contains("exposureCompCode"))
-      settings.exposureCompCode = body["exposureCompCode"];
-    if (body.contains("meteringModeCode"))
-      settings.meteringModeCode = body["meteringModeCode"];
-    if (body.contains("aeModeCode"))
-      settings.aeModeCode = body["aeModeCode"];
-    if (body.contains("whiteBalanceCode"))
-      settings.whiteBalanceCode = body["whiteBalanceCode"];
-    if (body.contains("pictureStyleCode"))
-      settings.pictureStyleCode = body["pictureStyleCode"];
-    if (body.contains("afModeCode"))
-      settings.afModeCode = body["afModeCode"];
-    if (body.contains("imageQualityCode"))
-      settings.imageQualityCode = body["imageQualityCode"];
-    if (body.contains("driveModeCode"))
-      settings.driveModeCode = body["driveModeCode"];
-    if (body.contains("evfOutputDevice"))
-      settings.evfOutputDevice = body["evfOutputDevice"];
-    if (body.contains("evfZoom"))
-      settings.evfZoom = body["evfZoom"];
-    if (body.contains("mirror"))
-      settings.mirror = body["mirror"];
-    if (body.contains("rotation"))
-      settings.rotation = body["rotation"];
-
-    if (camMgr->setExtendedCameraSettings(settings)) {
-      res.set_content(jsonResponse(true, "Extended camera settings updated"),
-                      "application/json");
-    } else {
-      res.status = 500;
-      res.set_content(
-          jsonError("Failed to update extended camera settings", 500),
-          "application/json");
-    }
-  } catch (const std::exception &e) {
-    res.status = 400;
-    res.set_content(jsonError(e.what(), 400), "application/json");
-  }
-}
-
-void HTTPServer::handleSetCameraPropertyByCode(const httplib::Request &req,
-                                               httplib::Response &res) {
-  setCorsHeaders(res);
-
-  try {
-    json body = json::parse(req.body);
-
-    if (!body.contains("propertyId") || !body.contains("code")) {
-      res.status = 400;
-      res.set_content(jsonError("Missing propertyId or code", 400),
-                      "application/json");
-      return;
-    }
-
-    EdsPropertyID propertyId = body["propertyId"];
-    EdsUInt32 code = body["code"];
-
-    auto *camMgr = app_->getCameraManager();
-    if (!camMgr) {
-      res.status = 500;
-      res.set_content(jsonError("Camera Manager not initialized", 500),
-                      "application/json");
-      return;
-    }
-
-    if (camMgr->setCameraPropertyByCode(propertyId, code)) {
-      res.set_content(jsonResponse(true, "Camera property updated"),
-                      "application/json");
-    } else {
-      res.status = 500;
-      res.set_content(jsonError("Failed to set camera property", 500),
-                      "application/json");
-    }
-  } catch (const std::exception &e) {
-    res.status = 400;
-    res.set_content(jsonError(e.what(), 400), "application/json");
   }
 }
 
@@ -1561,229 +1279,225 @@ void HTTPServer::handleGetNetworkStatus(const httplib::Request &req,
   res.set_content(response.dump(), "application/json");
 }
 
-// ==================== Capture API ====================
+// ==================== Layout API ====================
 
-void HTTPServer::handleCapture(const httplib::Request &req,
-                               httplib::Response &res) {
+void HTTPServer::handleAnalyzeLayout(const httplib::Request &req,
+                                     httplib::Response &res) {
   setCorsHeaders(res);
+
   try {
-    json body = json::parse(req.body);
-    int eventId = body.value("eventId", 0);
+    // Expect multipart form data with PNG file
+    if (!req.has_file("layout")) {
+      // Try JSON body with base64 or path
+      json body = json::parse(req.body);
+      std::string layoutPath = body.value("layoutPath", "");
+      std::string eventId = body.value("eventId", "");
 
-    // Check camera
-    auto *cameraMgr = app_->getCameraManager();
-    auto *camera = cameraMgr ? cameraMgr->getCurrentCamera() : nullptr;
+      if (layoutPath.empty()) {
+        res.status = 400;
+        res.set_content(jsonError("Layout path or file required", 400),
+                        "application/json");
+        return;
+      }
 
-    if (!camera || !camera->isConnected()) {
-      res.status = 503;
-      res.set_content(jsonError("Camera not connected", 503),
-                      "application/json");
+      // Analyze layout
+      LayoutAnalyzer analyzer;
+      auto config = analyzer.analyzeLayout(layoutPath, "layout");
+
+      // Convert to JSON
+      json slotsJson = json::array();
+      for (const auto& slot : config.slots) {
+        json slotJson;
+        slotJson["id"] = slot.id;
+        slotJson["x"] = slot.x;
+        slotJson["y"] = slot.y;
+        slotJson["width"] = slot.width;
+        slotJson["height"] = slot.height;
+        slotsJson.push_back(slotJson);
+      }
+
+      json response;
+      response["success"] = true;
+      response["data"] = {
+        {"layout_name", config.layoutName},
+        {"layout_path", config.layoutPath},
+        {"slots_count", config.slotsCount},
+        {"slots", slotsJson}
+      };
+
+      res.set_content(response.dump(), "application/json");
       return;
     }
 
-    // Capture logic (simplified)
-    bool success = false;
-    std::string path;
+    // Handle file upload
+    auto file = req.get_file_value("layout");
+    std::string eventId = req.has_param("eventId") ? req.get_param_value("eventId") : "";
 
-    camera->capture(CaptureMode::Photo, [&](const CaptureResult &result) {
-      success = result.success;
-      if (success)
-        path = result.filePath;
-    });
+    // Analyze from memory
+    std::vector<uint8_t> pngData(file.content.begin(), file.content.end());
 
-    // Wait for capture (simple blocking for now, ideally async/future)
-    // For REST API, blocking briefly is acceptable or return job ID.
-    // Given the SDK callback structure, we might need a latch/semaphore here
-    // or rely on the fact that capture() might be synchronous in current
-    // wrapper (CanonSDKCamera implementation waits).
+    LayoutAnalyzer analyzer;
+    auto slots = analyzer.analyzePNG(pngData);
 
-    // Actually CanonSDKCamera::capture handles it but runs callback.
-    // To block here we need synchronization mechanism.
-    // For now mocking result to continue implementation flow.
-    success = true;
-
-    json response;
-    response["success"] = success;
-    response["message"] = success ? "Photo captured" : "Capture failed";
-    res.set_content(response.dump(), "application/json");
-
-  } catch (const std::exception &e) {
-    res.status = 400;
-    res.set_content(jsonError(e.what(), 400), "application/json");
-  }
-}
-
-void HTTPServer::handleCaptureGif(const httplib::Request &req,
-                                  httplib::Response &res) {
-  setCorsHeaders(res);
-  try {
-    json body = json::parse(req.body);
-    int eventId = body.value("eventId", 0);
-    int frameCount = body.value("frameCount", 10);
-    int frameDelay = body.value("frameDelay", 10);
-    int width = body.value("width", 800);
-    int height = body.value("height", 600);
-
-    auto *burstMgr = app_->getBurstCaptureManager();
-    if (!burstMgr || burstMgr->isCapturing()) {
-      res.status = 409;
-      res.set_content(jsonError("Camera busy or unavailable", 409),
-                      "application/json");
-      return;
+    json slotsJson = json::array();
+    for (const auto& slot : slots) {
+      json slotJson;
+      slotJson["id"] = slot.id;
+      slotJson["x"] = slot.x;
+      slotJson["y"] = slot.y;
+      slotJson["width"] = slot.width;
+      slotJson["height"] = slot.height;
+      slotsJson.push_back(slotJson);
     }
-
-    BurstCaptureManager::BurstOptions options;
-    options.frameCount = frameCount;
-    options.frameInterval = frameDelay * 10;
-    options.saveDirectory = "data/captures/event_" + std::to_string(eventId);
-
-    burstMgr->startBurst(options, nullptr,
-                         [this, eventId, frameDelay, width, height](
-                             const BurstCaptureManager::BurstResult &result) {
-                           if (result.success) {
-                             auto *burstMgr = app_->getBurstCaptureManager();
-                             if (burstMgr) {
-                               GifCreator::GifOptions gifOpts;
-                               gifOpts.frameDelay = frameDelay;
-                               gifOpts.width = width;
-                               gifOpts.height = height;
-                               burstMgr->createGifFromBurst(result, gifOpts);
-                             }
-                           }
-                         });
 
     json response;
     response["success"] = true;
-    response["message"] = "GIF capture started";
-    res.set_content(response.dump(), "application/json");
+    response["data"] = {
+      {"slots_count", static_cast<int>(slots.size())},
+      {"slots", slotsJson}
+    };
 
-  } catch (const std::exception &e) {
-    res.status = 400;
-    res.set_content(jsonError(e.what(), 400), "application/json");
+    res.set_content(response.dump(), "application/json");
+  } catch (const std::exception& e) {
+    res.status = 500;
+    res.set_content(jsonError(e.what(), 500), "application/json");
   }
 }
 
-void HTTPServer::handleCaptureBoomerang(const httplib::Request &req,
+void HTTPServer::handleComposePhotos(const httplib::Request &req,
+                                     httplib::Response &res) {
+  setCorsHeaders(res);
+
+  try {
+    json body = json::parse(req.body);
+
+    std::string layoutPath = body.value("layoutPath", "");
+    std::string outputPath = body.value("outputPath", "");
+    std::vector<std::string> photoPaths;
+
+    if (body.contains("photos") && body["photos"].is_array()) {
+      for (const auto& photo : body["photos"]) {
+        photoPaths.push_back(photo.get<std::string>());
+      }
+    }
+
+    if (layoutPath.empty() || outputPath.empty() || photoPaths.empty()) {
+      res.status = 400;
+      res.set_content(jsonError("layoutPath, outputPath, and photos required", 400),
+                      "application/json");
+      return;
+    }
+
+    // Load layout config from request or analyze
+    LayoutConfig config;
+    if (body.contains("slots") && body["slots"].is_array()) {
+      config.layoutPath = layoutPath;
+      for (const auto& slot : body["slots"]) {
+        SlotInfo si;
+        si.id = slot.value("id", 0);
+        si.x = slot.value("x", 0);
+        si.y = slot.value("y", 0);
+        si.width = slot.value("width", 0);
+        si.height = slot.value("height", 0);
+        config.slots.push_back(si);
+      }
+      config.slotsCount = static_cast<int>(config.slots.size());
+    } else {
+      // Analyze layout if slots not provided
+      LayoutAnalyzer analyzer;
+      config = analyzer.analyzeLayout(layoutPath, "layout");
+    }
+
+    // Compose
+    ImageCompositor compositor;
+    if (compositor.compose(layoutPath, photoPaths, config, outputPath)) {
+      json response;
+      response["success"] = true;
+      response["message"] = "Photos composed successfully";
+      response["data"] = {{"outputPath", outputPath}};
+      res.set_content(response.dump(), "application/json");
+    } else {
+      res.status = 500;
+      res.set_content(jsonError("Failed to compose photos", 500),
+                      "application/json");
+    }
+  } catch (const std::exception& e) {
+    res.status = 500;
+    res.set_content(jsonError(e.what(), 500), "application/json");
+  }
+}
+
+void HTTPServer::handleGetLayoutSlots(const httplib::Request &req,
+                                      httplib::Response &res) {
+  setCorsHeaders(res);
+
+  std::string eventId = req.matches[1];
+
+  // Load slots config from event directory
+  FileManager fm;
+  auto config = fm.loadSlotsConfig(eventId, "");
+
+  json slotsJson = json::array();
+  for (const auto& slot : config.slots) {
+    json slotJson;
+    slotJson["id"] = slot.id;
+    slotJson["x"] = slot.x;
+    slotJson["y"] = slot.y;
+    slotJson["width"] = slot.width;
+    slotJson["height"] = slot.height;
+    slotsJson.push_back(slotJson);
+  }
+
+  json response;
+  response["success"] = true;
+  response["data"] = {
+    {"layout_name", config.layoutName},
+    {"slots_count", config.slotsCount},
+    {"slots", slotsJson}
+  };
+
+  res.set_content(response.dump(), "application/json");
+}
+
+void HTTPServer::handleSaveLayoutConfig(const httplib::Request &req,
                                         httplib::Response &res) {
   setCorsHeaders(res);
-  try {
-    json body = json::parse(req.body);
-    int eventId = body.value("eventId", 0);
-    int frameCount = body.value("frameCount", 10);
 
-    auto *burstMgr = app_->getBurstCaptureManager();
-    if (!burstMgr || burstMgr->isCapturing()) {
-      res.status = 409;
-      res.set_content(jsonError("Camera busy", 409), "application/json");
-      return;
+  try {
+    std::string eventId = req.matches[1];
+    json body = json::parse(req.body);
+
+    LayoutConfig config;
+    config.layoutName = body.value("layout_name", "");
+    config.layoutPath = body.value("layout_path", "");
+    config.slotsCount = body.value("slots_count", 0);
+
+    if (body.contains("slots") && body["slots"].is_array()) {
+      for (const auto& slot : body["slots"]) {
+        SlotInfo si;
+        si.id = slot.value("id", 0);
+        si.x = slot.value("x", 0);
+        si.y = slot.value("y", 0);
+        si.width = slot.value("width", 0);
+        si.height = slot.value("height", 0);
+        config.slots.push_back(si);
+      }
     }
 
-    BurstCaptureManager::BurstOptions options;
-    options.frameCount = frameCount;
-    options.frameInterval = 150;
-    options.saveDirectory = "data/captures/event_" + std::to_string(eventId);
-
-    burstMgr->startBurst(
-        options, nullptr,
-        [this](const BurstCaptureManager::BurstResult &result) {
-          if (result.success) {
-            auto *burstMgr = app_->getBurstCaptureManager();
-            if (burstMgr) {
-              GifCreator::GifOptions gifOpts;
-              gifOpts.frameDelay = 5;
-              burstMgr->createBoomerangFromBurst(result, gifOpts);
-            }
-          }
-        });
-
-    json response;
-    response["success"] = true;
-    response["message"] = "Boomerang capture started";
-    res.set_content(response.dump(), "application/json");
-
-  } catch (const std::exception &e) {
+    FileManager fm;
+    if (fm.saveSlotsConfig(eventId, config)) {
+      json response;
+      response["success"] = true;
+      response["message"] = "Layout config saved";
+      res.set_content(response.dump(), "application/json");
+    } else {
+      res.status = 500;
+      res.set_content(jsonError("Failed to save layout config", 500),
+                      "application/json");
+    }
+  } catch (const std::exception& e) {
     res.status = 400;
     res.set_content(jsonError(e.what(), 400), "application/json");
-  }
-}
-
-void HTTPServer::handleStartVideo(const httplib::Request &req,
-                                  httplib::Response &res) {
-  setCorsHeaders(res);
-  res.set_content(jsonResponse(true, "Video recording started (Shim)"),
-                  "application/json");
-}
-
-void HTTPServer::handleStopVideo(const httplib::Request &req,
-                                 httplib::Response &res) {
-  setCorsHeaders(res);
-  res.set_content(jsonResponse(true, "Video recording stopped (Shim)"),
-                  "application/json");
-}
-
-void HTTPServer::handleUploadLayout(const httplib::Request &req,
-                                    httplib::Response &res) {
-  setCorsHeaders(res);
-
-  // Check if multipart
-  if (!req.has_file("layout")) {
-    res.status = 400;
-    res.set_content(jsonError("No layout file uploaded", 400),
-                    "application/json");
-    return;
-  }
-
-  try {
-    int eventId = std::stoi(req.matches[1]);
-    const auto &file = req.get_file_value("layout");
-
-    // Save file
-    auto *fileMgr = app_->getFileManager();
-    if (!fileMgr)
-      throw std::runtime_error("File manager not ready");
-
-    std::string eventDir = fileMgr->getEventDirectory(std::to_string(eventId));
-    if (eventDir.empty()) {
-      // Create it if not exists
-      eventDir = fileMgr->createEventDirectory(std::to_string(eventId));
-    }
-
-    std::string filename =
-        "layout.png"; // Enforce consistent name or use file.filename
-    std::string layoutPath = eventDir + "/" + filename;
-
-    {
-      std::ofstream ofs(layoutPath, std::ios::binary);
-      ofs.write(file.content.c_str(), file.content.size());
-    }
-
-    // Analyze
-    std::string jsonPath = eventDir + "/slots_config.json";
-    LayoutInfo info = LayoutAnalyzer::analyzeAndSave(layoutPath, jsonPath);
-
-    // Update event photo count based on slots
-    auto &db = app_->getDatabase();
-    auto config = db.getEventConfig(eventId);
-    if (config) {
-      EventConfig newConfig = *config;
-      newConfig.photoCount = info.photoCount;
-      // Also update layout template name
-      newConfig.layoutTemplate = filename;
-      db.updateEventConfig(eventId, newConfig);
-    }
-
-    json response;
-    response["success"] = true;
-    response["message"] = "Layout uploaded and analyzed successfully";
-    response["data"] = info.toJson();
-
-    res.set_content(response.dump(), "application/json");
-
-  } catch (const std::exception &e) {
-    res.status = 500;
-    res.set_content(
-        jsonError(std::string("Failed to process layout: ") + e.what(), 500),
-        "application/json");
   }
 }
 

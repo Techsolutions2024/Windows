@@ -1,18 +1,114 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Camera, Monitor, Printer, Wifi, Database, Info, Timer, Image as ImageIcon, Save, Check, AlertCircle, Loader2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { ArrowLeft, Camera, Monitor, Printer, Wifi, Database, Info, Timer, Image as ImageIcon, Save } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 import CameraSettings from '../components/CameraSettings'
+import CameraInfo from '../components/CameraInfo'
 import CaptureSettings from '../components/CaptureSettings'
 import LayoutSettings from '../components/LayoutSettings'
-import { api } from '../services/api'
+import api from '../services/api'
 
 export default function SettingsPage() {
   const navigate = useNavigate()
-  const { settings, selectedEvent, updateSettings } = useAppStore()
+  const [searchParams] = useSearchParams()
+  const { settings, updateSettings, currentEvent, setCurrentEvent } = useAppStore()
   const [activeTab, setActiveTab] = useState('camera')
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle')
-  const [saveMessage, setSaveMessage] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  // Load event from URL if present
+  useEffect(() => {
+    const loadEvent = async () => {
+      const eventId = searchParams.get('eventId')
+      if (eventId) {
+        try {
+          const response = await api.getEvent(parseInt(eventId))
+          if (response.success && response.data) {
+            setCurrentEvent(response.data)
+
+            // Also load event-specific camera settings if available
+            if (response.data.config?.cameraSettings) {
+              try {
+                const eventCameraSettings = JSON.parse(response.data.config.cameraSettings)
+                updateSettings({ cameraSettings: eventCameraSettings })
+              } catch (e) {
+                console.error("Failed to parse event camera settings", e)
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Failed to load event", error)
+        }
+      }
+    }
+    loadEvent()
+  }, [searchParams, setCurrentEvent, updateSettings])
+
+  const handleSaveConfiguration = async () => {
+    if (!currentEvent) {
+      alert('No event selected')
+      return
+    }
+
+    try {
+      setSaving(true)
+
+      // aggregated config
+      const fullConfig = {
+        cameraSettings: JSON.stringify(settings.cameraSettings),
+        printSettings: JSON.stringify({
+          autoPrint: settings.autoPrint,
+          printCopies: settings.printCopies
+        }),
+        displaySettings: JSON.stringify({
+          screenOrientation: settings.screenOrientation,
+          autoPreview: settings.autoPreview
+        }),
+        layoutSettings: JSON.stringify(settings.layout),
+        captureSettings: JSON.stringify({
+          countdownDuration: settings.countdownDuration,
+          captureMode: settings.captureMode,
+          photoInterval: settings.photoInterval
+        })
+      };
+
+      // We explicitly send these fields as well because the backend EventConfig has specific columns for them
+      // but we also want to save the full structure to the file system.
+      // The backend needs to be updated to handle these extra fields or we pack them into existing ones.
+      // For now, we will pack 'printSettings', 'displaySettings' etc into the 'propsConfig' or 'effectsConfig' 
+      // if there are no dedicated columns, OR we strictly rely on the backend saving the "generic" config to file.
+
+      // Let's send the specific cameraSettings as before, plus a new 'fullConfig' field if the API supports it.
+      // Since I can't easily change the frontend API type definition without seeing it (api.ts), 
+      // I will assume updateEventConfig accepts an object.
+
+      await api.updateEventConfig(currentEvent.id, {
+        cameraSettings: fullConfig.cameraSettings,
+        // We map other settings to available fields in EventConfig if possible, 
+        // or we rely on the backend to pick up extra JSON fields.
+        // Mapped fields based on HTTPServer.cpp:
+        countdownSeconds: settings.countdownDuration,
+        photoCount: settings.layout.layouts.find(l => l.id === settings.layout.selectedLayoutId)?.photoCount || 1,
+        layoutTemplate: settings.layout.layouts.find(l => l.id === settings.layout.selectedLayoutId)?.path || '',
+
+        // Custom fields that we want the backend to save to file:
+        // (The backend HTTPServer.cpp needs to look for these)
+        printSettings: fullConfig.printSettings,
+        displaySettings: fullConfig.displaySettings,
+        layoutSettings: fullConfig.layoutSettings,
+        captureSettings: fullConfig.captureSettings
+      })
+
+      // We also update the global camera settings just in case
+      await api.updateCameraSettings(settings.cameraSettings)
+
+      alert('Event configuration saved successfully!')
+    } catch (error) {
+      console.error('Failed to save configuration:', error)
+      alert('Failed to save configuration')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const tabs = [
     { id: 'camera', name: 'Camera', icon: Camera },
@@ -24,62 +120,6 @@ export default function SettingsPage() {
     { id: 'storage', name: 'Storage', icon: Database },
     { id: 'about', name: 'About', icon: Info },
   ]
-
-  // Save all configuration to event folder
-  const handleSaveConfig = async () => {
-    if (!selectedEvent) {
-      setSaveStatus('error')
-      setSaveMessage('Please select an event first')
-      setTimeout(() => setSaveStatus('idle'), 3000)
-      return
-    }
-
-    try {
-      setSaveStatus('saving')
-      setSaveMessage('')
-
-      // Gather all settings to save
-      const configToSave = {
-        camera: settings.cameraSettings,
-        capture: {
-          countdownSeconds: settings.countdownSeconds,
-          photoEnabled: settings.photoEnabled,
-          gifEnabled: settings.gifEnabled,
-          boomerangEnabled: settings.boomerangEnabled,
-          videoEnabled: settings.videoEnabled,
-          autoPreview: settings.autoPreview,
-        },
-        print: {
-          autoPrint: settings.autoPrint,
-          printCopies: settings.printCopies,
-        },
-        display: {
-          screenOrientation: settings.screenOrientation,
-          fullscreen: settings.fullscreen,
-          showGrid: settings.showGrid,
-        },
-        layout: settings.layoutTemplate,
-        savedAt: new Date().toISOString(),
-      }
-
-      const response = await api.saveEventConfigToFile(selectedEvent.id, configToSave)
-
-      if (response.success) {
-        setSaveStatus('success')
-        setSaveMessage(`Saved to: ${response.data?.path || 'event folder'}`)
-        setTimeout(() => setSaveStatus('idle'), 3000)
-      } else {
-        setSaveStatus('error')
-        setSaveMessage(response.error || 'Failed to save configuration')
-        setTimeout(() => setSaveStatus('idle'), 3000)
-      }
-    } catch (error) {
-      console.error('Failed to save config:', error)
-      setSaveStatus('error')
-      setSaveMessage('Failed to save configuration')
-      setTimeout(() => setSaveStatus('idle'), 3000)
-    }
-  }
 
   return (
     <div className="w-full h-screen bg-dark-darker flex flex-col">
@@ -93,19 +133,27 @@ export default function SettingsPage() {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h1 className="text-xl font-semibold">Settings</h1>
-          {selectedEvent && (
-            <span className="text-sm text-gray-400">
-              Event: <span className="text-primary">{selectedEvent.name}</span>
-            </span>
-          )}
         </div>
+
+        {/* Save Configuration Button */}
+        <button
+          onClick={handleSaveConfiguration}
+          disabled={saving || !currentEvent}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${saving || !currentEvent
+            ? 'bg-gray-600 cursor-not-allowed opacity-50'
+            : 'bg-blue-500 hover:bg-blue-600'
+            } text-white`}
+        >
+          <Save className="w-4 h-4" />
+          {saving ? 'Saving...' : 'Save Configuration'}
+        </button>
       </div>
 
       {/* Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar */}
-        <div className="w-64 bg-dark border-r border-gray-700 p-4 flex flex-col">
-          <div className="space-y-1 flex-1">
+        <div className="w-64 bg-dark border-r border-gray-700 p-4">
+          <div className="space-y-1">
             {tabs.map((tab) => {
               const Icon = tab.icon
               return (
@@ -123,56 +171,27 @@ export default function SettingsPage() {
               )
             })}
           </div>
-
-          {/* Save Button in Sidebar Footer */}
-          <div className="pt-4 border-t border-white/10">
-            <button
-              onClick={handleSaveConfig}
-              disabled={saveStatus === 'saving'}
-              className={`w-full px-4 py-3 rounded-lg font-bold shadow-lg transition-all flex items-center justify-center gap-2
-                ${saveStatus === 'success' ? 'bg-green-600 hover:bg-green-600' :
-                  saveStatus === 'error' ? 'bg-red-600 hover:bg-red-600' :
-                  'bg-green-600 hover:bg-green-700 shadow-green-900/20'
-                }
-                ${saveStatus === 'saving' ? 'opacity-75 cursor-not-allowed' : ''}
-              `}
-            >
-              {saveStatus === 'saving' && <Loader2 className="w-5 h-5 animate-spin" />}
-              {saveStatus === 'success' && <Check className="w-5 h-5" />}
-              {saveStatus === 'error' && <AlertCircle className="w-5 h-5" />}
-              {saveStatus === 'idle' && <Save className="w-5 h-5" />}
-              <span>
-                {saveStatus === 'saving' ? 'Saving...' :
-                  saveStatus === 'success' ? 'Saved!' :
-                  saveStatus === 'error' ? 'Error!' :
-                  'Save Configuration'
-                }
-              </span>
-            </button>
-            {saveMessage && (
-              <p className={`text-xs mt-2 text-center ${
-                saveStatus === 'error' ? 'text-red-400' : 'text-green-400'
-              }`}>
-                {saveMessage}
-              </p>
-            )}
-          </div>
         </div>
 
         {/* Main Content */}
         <div className="flex-1 overflow-y-auto p-8">
           {activeTab === 'camera' && (
-            <div className="max-w-2xl space-y-8">
-              <div>
-                <h2 className="text-2xl font-semibold mb-6">Camera Settings</h2>
-                <p className="text-sm text-gray-400 mb-4">
-                  Configure Canon EDSDK camera settings. Values are read directly from the connected camera.
-                </p>
+            <div className="max-w-3xl space-y-6">
+              <h2 className="text-2xl font-semibold mb-6">Camera Settings</h2>
 
-                {/* Camera Parameters */}
-                <div className="bg-dark p-6 rounded-xl border border-gray-700">
-                  <CameraSettings />
-                </div>
+              {/* Camera Status - Single Line */}
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Camera Status</label>
+                <CameraInfo />
+              </div>
+
+              {/* Camera Parameters - Group Box */}
+              <div className="bg-dark p-6 rounded-xl border border-gray-700">
+                <h3 className="text-lg font-semibold text-white mb-2">Camera Parameters</h3>
+                <p className="text-sm text-gray-400 mb-6">
+                  Configure manual camera settings for Canon DSLR. These settings will be saved per event.
+                </p>
+                <CameraSettings />
               </div>
             </div>
           )}
@@ -338,7 +357,7 @@ export default function SettingsPage() {
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    value="./Photobooth_Data/events"
+                    value="D:/PhotoboothPro/Photos"
                     readOnly
                     className="flex-1 px-4 py-3 bg-dark-lighter rounded-lg"
                   />
@@ -393,7 +412,7 @@ export default function SettingsPage() {
                 <div className="p-4 bg-dark-lighter rounded-lg">
                   <div className="font-medium mb-1">Supported Cameras</div>
                   <div className="text-sm text-gray-400">
-                    Canon EOS Series (EDSDK)
+                    Canon R100, Canon EOS Series, Webcams
                   </div>
                 </div>
 

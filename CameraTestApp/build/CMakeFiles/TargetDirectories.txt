@@ -1,0 +1,5 @@
+C:/sass/CameraTestApp/build/CMakeFiles/CameraTestApp.dir
+C:/sass/CameraTestApp/build/CMakeFiles/edit_cache.dir
+C:/sass/CameraTestApp/build/CMakeFiles/rebuild_cache.dir
+C:/sass/CameraTestApp/build/CMakeFiles/CameraTestApp_autogen_timestamp_deps.dir
+C:/sass/CameraTestApp/build/CMakeFiles/CameraTestApp_autogen.dir

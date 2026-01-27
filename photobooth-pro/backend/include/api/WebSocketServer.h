@@ -57,13 +57,14 @@ public:
   void stop();
   bool isRunning() const;
 
-  // Broadcast methods
-  void broadcastLiveView(const std::vector<uint8_t> &imageData, int width,
-                         int height);
-  void broadcastBinary(const std::vector<uint8_t> &data);
+  // Event broadcast (text JSON)
   void broadcastEvent(const std::string &eventType, const std::string &data);
   void broadcastCountdown(int seconds);
   void broadcastCaptureComplete(const std::string &imagePath);
+
+  // Live view streaming
+  void startLiveViewBroadcast();
+  void stopLiveViewBroadcast();
 
   int getPort() const { return port_; }
   size_t getConnectionCount() const;
@@ -74,18 +75,26 @@ private:
   std::atomic<bool> running_;
   std::unique_ptr<std::thread> serverThread_;
 
+  // Live view broadcast thread
+  std::unique_ptr<std::thread> liveViewThread_;
+  std::atomic<bool> liveViewBroadcasting_{false};
+
   // WebSocket++ server
   WsServer server_;
   std::set<ConnectionHandle, std::owner_less<ConnectionHandle>> connections_;
+  std::set<ConnectionHandle, std::owner_less<ConnectionHandle>> liveViewClients_;
+  // Clients who have explicitly signaled they are ready for the next frame
+  std::set<ConnectionHandle, std::owner_less<ConnectionHandle>> readyClients_;
   std::mutex connectionsMutex_;
 
   void run();
+  void liveViewBroadcastLoop();
   void onOpen(ConnectionHandle hdl);
   void onClose(ConnectionHandle hdl);
   void onMessage(ConnectionHandle hdl, WsServer::message_ptr msg);
 
   void broadcast(const std::string &message);
-  std::string encodeBase64(const std::vector<uint8_t> &data);
+  void broadcastBinary(const std::vector<uint8_t> &data);
 };
 
 } // namespace photobooth

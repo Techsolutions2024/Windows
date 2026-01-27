@@ -13,7 +13,6 @@ class WebSocketService {
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
   private isConnecting = false;
-  private lastBlobUrl: string | null = null; // Track last blob URL for cleanup
 
   constructor(url?: string) {
     this.url = url || 'ws://localhost:8081';
@@ -35,7 +34,6 @@ class WebSocketService {
 
       try {
         this.ws = new WebSocket(this.url);
-        this.ws.binaryType = 'arraybuffer'; // Enable binary mode for efficiently receiving video frames
 
         this.ws.onopen = () => {
           console.log('WebSocket connected');
@@ -45,32 +43,14 @@ class WebSocketService {
         };
 
         this.ws.onmessage = (event) => {
-          // Handle Binary Data (Live View Stream)
-          if (event.data instanceof ArrayBuffer) {
-            // Revoke previous blob URL to prevent memory leak
-            if (this.lastBlobUrl) {
-              URL.revokeObjectURL(this.lastBlobUrl);
-            }
-
-            // Create a Blob from the ArrayBuffer for display
-            const blob = new Blob([event.data], { type: 'image/jpeg' });
-            const imageUrl = URL.createObjectURL(blob);
-            this.lastBlobUrl = imageUrl;
-
-            // Notify subscribers of the binary frame
-            this.handleMessage({
-              type: WS_EVENTS.LIVEVIEW_FRAME,
-              data: { imageData: imageUrl, isBinary: true }
-            });
+          // Ignore binary messages (handled by dedicated live view connection)
+          if (event.data instanceof Blob || event.data instanceof ArrayBuffer) {
             return;
           }
 
-          // Handle Text Data (JSON Commands)
           try {
-            if (typeof event.data === 'string') {
-              const message: WebSocketMessage = JSON.parse(event.data);
-              this.handleMessage(message);
-            }
+            const message: WebSocketMessage = JSON.parse(event.data);
+            this.handleMessage(message);
           } catch (error) {
             console.error('Failed to parse WebSocket message:', error);
           }
@@ -109,9 +89,9 @@ class WebSocketService {
 
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-
+    
     console.log(`Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`);
-
+    
     setTimeout(() => {
       this.connect().catch(() => {
         // Reconnect failed, will try again
@@ -178,7 +158,6 @@ class WebSocketService {
 
 // Event types
 export const WS_EVENTS = {
-  LIVEVIEW_FRAME: 'liveview:frame',
   CAPTURE_COUNTDOWN: 'capture:countdown',
   CAPTURE_COMPLETE: 'capture:complete',
   PRINT_STATUS: 'print:status',
@@ -223,32 +202,6 @@ export function useWebSocket() {
     isConnected,
     subscribe,
     send,
-  };
-}
-
-// Hook for live view
-export function useLiveView() {
-  const [frame, setFrame] = useState<string | null>(null);
-  const [isActive, setIsActive] = useState(false);
-  const { subscribe, isConnected } = useWebSocket();
-
-  useEffect(() => {
-    if (!isConnected) return;
-
-    const unsubscribe = subscribe(WS_EVENTS.LIVEVIEW_FRAME, (data) => {
-      setFrame(data.imageData);
-      setIsActive(true);
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  }, [isConnected, subscribe]);
-
-  return {
-    frame,
-    isActive,
-    isConnected,
   };
 }
 

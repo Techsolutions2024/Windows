@@ -1,0 +1,12 @@
+<RCC>
+    <qresource prefix="/qml">
+        <file>main.qml</file>
+        <file>components/CameraSelector.qml</file>
+        <file>components/PropertyPanel.qml</file>
+        <file>components/PropertyRow.qml</file>
+        <file>components/PropertyInfoRow.qml</file>
+        <file>components/LiveViewPanel.qml</file>
+        <file>components/ShootingControls.qml</file>
+        <file>components/StatusBar.qml</file>
+    </qresource>
+</RCC>

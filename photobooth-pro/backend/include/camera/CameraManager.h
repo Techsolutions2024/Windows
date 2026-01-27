@@ -1,8 +1,8 @@
 #pragma once
 
 #include "ICamera.h"
-#include "camera/CanonSDKCamera.h"
 #include <atomic>
+#include <condition_variable>
 #include <memory>
 #include <mutex>
 #include <vector>
@@ -14,7 +14,7 @@ struct CameraInfo {
   std::string name;
   CameraType type;
   bool connected;
-  int index;  // Camera index in list
+  int webcamIndex; // Only for webcams
 };
 
 class CameraManager {
@@ -30,8 +30,15 @@ public:
 
   // Camera selection
   bool selectCamera(const std::string &cameraName);
+  bool selectWebcam(int deviceIndex);
   ICamera *getActiveCamera();
   std::string getActiveCameraName() const;
+
+  // MJPEG streaming (production live view)
+  bool startMjpegStream();
+  void stopMjpegStream();
+  bool isMjpegStreaming() const;
+  bool waitForFrame(std::vector<uint8_t> &frame, int timeoutMs);
 
   // Quick access methods (delegates to active camera)
   bool startLiveView(LiveViewCallback callback);
@@ -46,25 +53,25 @@ public:
   std::vector<std::string> getSupportedShutterSpeeds() const;
   std::vector<std::string> getSupportedWhiteBalances() const;
 
-  // Extended SDK methods (Canon-specific)
-  CanonSupportedValues getAllSupportedCameraValues();
-  CanonCameraSettings getExtendedCameraSettings() const;
-  bool setExtendedCameraSettings(const CanonCameraSettings& settings);
-  bool setCameraPropertyByCode(EdsPropertyID propertyID, EdsUInt32 code);
-
-  // Get Canon SDK camera (for direct access)
-  CanonSDKCamera* getCanonCamera();
-
-  // Set save directory for captures
-  void setSaveDirectory(const std::string& dir);
-
 private:
-  std::unique_ptr<CanonSDKCamera> activeCamera_;
+  std::vector<std::unique_ptr<ICamera>> cameras_;
+  ICamera *activeCamera_;
   std::mutex mutex_;
   bool initialized_;
-  std::string saveDirectory_;
+
+  // Frame buffer for streaming
+  std::vector<uint8_t> latestFrame_;
+  std::mutex frameMutex_;
+  std::condition_variable frameCV_;
+  uint64_t frameSeq_{0};
+  std::atomic<bool> mjpegStreaming_{false};
+  std::atomic<int> streamClients_{0};
+
+  // Shared Memory for IPC (Electron)
+  std::unique_ptr<SharedMemoryManager> sharedMemory_;
 
   void detectCanonCameras();
+  void detectWebcams();
 };
 
 } // namespace photobooth

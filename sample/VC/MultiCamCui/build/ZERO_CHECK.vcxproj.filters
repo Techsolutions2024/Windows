@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="18.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\sass\sample\VC\MultiCamCui\build\CMakeFiles\4e4079d10e014b4385d518dbc6943ca5\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{73A60FE2-A475-3D31-A2E7-76A6556F92CB}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

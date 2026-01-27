@@ -1,14 +1,12 @@
 #include "api/WebSocketServer.h"
+#include "core/Application.h"
+#include "camera/CameraManager.h"
 #include "nlohmann/json.hpp"
 #include <iostream>
 
 using json = nlohmann::json;
 
 namespace photobooth {
-
-// Base64 encoding table
-static const char base64_chars[] =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 WebSocketServer::WebSocketServer(Application *app, int port)
     : app_(app), port_(port), running_(false) {
@@ -23,13 +21,14 @@ WebSocketServer::WebSocketServer(Application *app, int port)
   server_.set_reuse_addr(true);
 
   // Set handlers
-  server_.set_open_handler([this](ConnectionHandle hdl) { this->onOpen(hdl); });
+  server_.set_open_handler(
+      [this](ConnectionHandle hdl) { this->onOpen(hdl); });
   server_.set_close_handler(
       [this](ConnectionHandle hdl) { this->onClose(hdl); });
-  server_.set_message_handler(
-      [this](ConnectionHandle hdl, WsServer::message_ptr msg) {
-        this->onMessage(hdl, msg);
-      });
+  server_.set_message_handler([this](ConnectionHandle hdl,
+                                     WsServer::message_ptr msg) {
+    this->onMessage(hdl, msg);
+  });
 }
 
 WebSocketServer::~WebSocketServer() { stop(); }
@@ -60,6 +59,7 @@ void WebSocketServer::stop() {
   }
 
   running_ = false;
+  stopLiveViewBroadcast();
 
   try {
     server_.stop_listening();
@@ -92,7 +92,8 @@ void WebSocketServer::stop() {
 bool WebSocketServer::isRunning() const { return running_; }
 
 size_t WebSocketServer::getConnectionCount() const {
-  std::lock_guard<std::mutex> lock(const_cast<std::mutex &>(connectionsMutex_));
+  std::lock_guard<std::mutex> lock(
+      const_cast<std::mutex &>(connectionsMutex_));
   return connections_.size();
 }
 
@@ -112,10 +113,20 @@ void WebSocketServer::onOpen(ConnectionHandle hdl) {
 }
 
 void WebSocketServer::onClose(ConnectionHandle hdl) {
-  std::lock_guard<std::mutex> lock(connectionsMutex_);
-  connections_.erase(hdl);
-  std::cout << "WebSocket client disconnected. Total: " << connections_.size()
-            << std::endl;
+  bool shouldStopLiveView = false;
+  {
+    std::lock_guard<std::mutex> lock(connectionsMutex_);
+    connections_.erase(hdl);
+    liveViewClients_.erase(hdl);
+    readyClients_.erase(hdl);
+    shouldStopLiveView = liveViewClients_.empty() && liveViewBroadcasting_;
+    std::cout << "WebSocket client disconnected. Total: " << connections_.size()
+              << std::endl;
+  }
+
+  if (shouldStopLiveView) {
+    stopLiveViewBroadcast();
+  }
 }
 
 void WebSocketServer::onMessage(ConnectionHandle hdl,
@@ -130,17 +141,45 @@ void WebSocketServer::onMessage(ConnectionHandle hdl,
     if (type == "ping") {
       json response;
       response["type"] = "pong";
-      response["timestamp"] =
-          std::chrono::duration_cast<std::chrono::milliseconds>(
-              std::chrono::system_clock::now().time_since_epoch())
-              .count();
+      response["timestamp"] = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                  std::chrono::system_clock::now().time_since_epoch())
+                                  .count();
       server_.send(hdl, response.dump(), websocketpp::frame::opcode::text);
-    } else if (type == "subscribe") {
-      // Client subscribes to specific events
+    } else if (type == "liveview:start") {
+      {
+        std::lock_guard<std::mutex> lock(connectionsMutex_);
+        liveViewClients_.insert(hdl);
+        // Prime the pump: "Start" implies ready for the first frame
+        readyClients_.insert(hdl);
+      }
+      startLiveViewBroadcast();
       json response;
-      response["type"] = "subscribed";
-      response["channel"] = request.value("channel", "all");
+      response["type"] = "liveview:started";
       server_.send(hdl, response.dump(), websocketpp::frame::opcode::text);
+      std::cout << "LiveView started for client. Ready set: " << 1 << std::endl;
+    } else if (type == "liveview:stop") {
+      bool shouldStop = false;
+      {
+        std::lock_guard<std::mutex> lock(connectionsMutex_);
+        liveViewClients_.erase(hdl);
+        readyClients_.erase(hdl);
+        shouldStop = liveViewClients_.empty();
+      }
+      if (shouldStop) {
+        stopLiveViewBroadcast();
+      }
+      json response;
+      response["type"] = "liveview:stopped";
+      server_.send(hdl, response.dump(), websocketpp::frame::opcode::text);
+    } else if (type == "liveview:ready") {
+      size_t readyCount = 0;
+      {
+        std::lock_guard<std::mutex> lock(connectionsMutex_);
+        readyClients_.insert(hdl);
+        readyCount = readyClients_.size();
+      }
+      // Debug logging (optional, can be removed in production)
+      // std::cout << "Client ready. Total ready: " << readyCount << std::endl;
     }
   } catch (const std::exception &e) {
     std::cerr << "Error handling WebSocket message: " << e.what() << std::endl;
@@ -170,21 +209,80 @@ void WebSocketServer::broadcastBinary(const std::vector<uint8_t> &data) {
   }
 }
 
-// broadcastBinary is already defined in the class as private, but I just made
-// it public in header? Wait, I made it public in header, so I should implement
-// it or use the existing implementation. Existing implementation: void
-// WebSocketServer::broadcastBinary(const std::vector<uint8_t> &data) { ... } It
-// is at line 162.
+void WebSocketServer::startLiveViewBroadcast() {
+  if (liveViewBroadcasting_) return;
 
-void WebSocketServer::broadcastLiveView(const std::vector<uint8_t> &imageData,
-                                        int width, int height) {
-  if (connections_.empty()) {
-    return;
+  auto *camMgr = app_->getCameraManager();
+  if (!camMgr) return;
+
+  if (!camMgr->startMjpegStream()) return;
+
+  liveViewBroadcasting_ = true;
+  liveViewThread_ = std::make_unique<std::thread>(&WebSocketServer::liveViewBroadcastLoop, this);
+}
+
+void WebSocketServer::stopLiveViewBroadcast() {
+  if (!liveViewBroadcasting_) return;
+
+  liveViewBroadcasting_ = false;
+
+  auto *camMgr = app_->getCameraManager();
+  if (camMgr) camMgr->stopMjpegStream();
+
+  if (liveViewThread_ && liveViewThread_->joinable()) {
+    liveViewThread_->join();
   }
+  liveViewThread_.reset();
+}
 
-  // Send raw binary JPEG data directly
-  // The frontend handles this as a Blob -> URL
-  broadcastBinary(imageData);
+void WebSocketServer::liveViewBroadcastLoop() {
+  auto *camMgr = app_->getCameraManager();
+
+  while (liveViewBroadcasting_ && running_) {
+    std::vector<uint8_t> frame;
+    // Wait nicely for frame
+    if (!camMgr->waitForFrame(frame, 100)) {
+      continue; // timeout or stopped
+    }
+
+    // Copy subscribed client handles (release lock before I/O)
+    std::vector<ConnectionHandle> clients;
+    {
+      std::lock_guard<std::mutex> lock(connectionsMutex_);
+      clients.assign(liveViewClients_.begin(), liveViewClients_.end());
+    }
+
+    if (clients.empty()) continue;
+
+    // Send binary JPEG ONLY to subscribed AND READY clients
+    for (auto &hdl : clients) {
+      bool isReady = false;
+      {
+          std::lock_guard<std::mutex> lock(connectionsMutex_);
+          auto it = readyClients_.find(hdl);
+          if (it != readyClients_.end()) {
+              isReady = true;
+              readyClients_.erase(it); // Consume the ready token
+          }
+      }
+
+      if (isReady) {
+          try {
+            // Check socket state before sending to avoid 10053 hard crashes
+            auto con = server_.get_con_from_hdl(hdl);
+            if (con && con->get_state() == websocketpp::session::state::open) {
+                 server_.send(hdl, frame.data(), frame.size(), websocketpp::frame::opcode::binary);
+            }
+          } catch (const websocketpp::exception &e) {
+             // Specific websocket error - client likely disconnected
+             std::cerr << "WS Send Error: " << e.what() << std::endl;
+          } catch (...) {
+             // General error
+             std::cerr << "Unknown error sending frame" << std::endl;
+          }
+      }
+    }
+  }
 }
 
 void WebSocketServer::broadcastEvent(const std::string &eventType,
@@ -217,35 +315,6 @@ void WebSocketServer::broadcastCaptureComplete(const std::string &imagePath) {
           std::chrono::system_clock::now().time_since_epoch())
           .count();
   broadcast(message.dump());
-}
-
-std::string WebSocketServer::encodeBase64(const std::vector<uint8_t> &data) {
-  std::string encoded;
-  encoded.reserve(((data.size() + 2) / 3) * 4);
-
-  size_t i = 0;
-  while (i < data.size()) {
-    uint32_t octet_a = i < data.size() ? data[i++] : 0;
-    uint32_t octet_b = i < data.size() ? data[i++] : 0;
-    uint32_t octet_c = i < data.size() ? data[i++] : 0;
-
-    uint32_t triple = (octet_a << 16) + (octet_b << 8) + octet_c;
-
-    encoded.push_back(base64_chars[(triple >> 18) & 0x3F]);
-    encoded.push_back(base64_chars[(triple >> 12) & 0x3F]);
-    encoded.push_back(base64_chars[(triple >> 6) & 0x3F]);
-    encoded.push_back(base64_chars[triple & 0x3F]);
-  }
-
-  // Add padding
-  size_t padding = data.size() % 3;
-  if (padding > 0) {
-    for (size_t p = padding; p < 3; ++p) {
-      encoded[encoded.size() - (3 - p)] = '=';
-    }
-  }
-
-  return encoded;
 }
 
 } // namespace photobooth

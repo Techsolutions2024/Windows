@@ -1,0 +1,10 @@
+^C:\SASS\SAMPLE\VC\MULTICAMCUI\BUILD\CMAKEFILES\4E4079D10E014B4385D518DBC6943CA5\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/sass/sample/VC/MultiCamCui -BC:/sass/sample/VC/MultiCamCui/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/sass/sample/VC/MultiCamCui/build/MultiCamCui.slnx
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

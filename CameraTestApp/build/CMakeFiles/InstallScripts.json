@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/sass/CameraTestApp/build/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

@@ -1,219 +1,267 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useAppStore } from '../store/useAppStore'
-import { useLiveView } from '../services/websocket'
 
 interface LiveViewDisplayProps {
-  filter?: string;
-  mirror?: boolean;
+  filter?: string
 }
 
-export default function LiveViewDisplay({ filter = 'none', mirror = false }: LiveViewDisplayProps) {
+const CSS_FILTERS: Record<string, string> = {
+  none: 'none',
+  bw: 'grayscale(1)',
+  sepia: 'sepia(0.8)',
+  vintage: 'sepia(0.3) saturate(1.4) brightness(1.1)',
+  cool: 'hue-rotate(10deg) saturate(1.2) brightness(1.05)',
+  warm: 'sepia(0.2) saturate(1.3) brightness(1.05)',
+}
+
+// Worker message types
+interface WorkerFrameMessage {
+  type: 'frame'
+  bitmap: ImageBitmap
+  fps: number
+}
+
+interface WorkerStatusMessage {
+  type: 'connected' | 'disconnected' | 'error' | 'status'
+  reason?: string
+  message?: string
+  connected?: boolean
+  fps?: number
+}
+
+type WorkerMessage = WorkerFrameMessage | WorkerStatusMessage
+
+export default function LiveViewDisplay({ filter = 'none' }: LiveViewDisplayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const { setLiveViewActive, setLiveViewFrame } = useAppStore()
-  const { frame, isActive, isConnected } = useLiveView()
-  const [dimensions, setDimensions] = useState({ width: 1280, height: 720 })
+  const workerRef = useRef<Worker | null>(null)
+  const bitmapRef = useRef<ImageBitmap | null>(null)
+  const rafRef = useRef<number>(0)
+  const { setLiveViewActive } = useAppStore()
+  const [isStreaming, setIsStreaming] = useState(false)
   const [showGrid, setShowGrid] = useState(false)
+  const [fps, setFps] = useState(0)
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting')
 
-  // Update store when WebSocket state changes
-  useEffect(() => {
-    setLiveViewActive(isActive)
-    if (frame) {
-      setLiveViewFrame(frame)
-    }
-  }, [isActive, frame, setLiveViewActive, setLiveViewFrame])
+  // Render loop - runs at display refresh rate (60fps)
+  const renderLoop = useCallback(() => {
+    const canvas = canvasRef.current
+    const bitmap = bitmapRef.current
 
-  // Render frame from WebSocket
-  useEffect(() => {
-    if (frame && canvasRef.current) {
-      const canvas = canvasRef.current
-      const ctx = canvas.getContext('2d')
+    if (canvas && bitmap) {
+      const ctx = canvas.getContext('2d', {
+        alpha: false,
+        desynchronized: true, // Reduce latency on supported browsers
+      })
+
       if (ctx) {
-        const img = new Image()
-        img.onload = () => {
-          // Clear canvas
-          ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-          // Draw image maintaining aspect ratio
-          const imgAspect = img.width / img.height
-          const canvasAspect = canvas.width / canvas.height
-
-          let drawWidth, drawHeight, drawX, drawY
-
-          if (imgAspect > canvasAspect) {
-            drawWidth = canvas.width
-            drawHeight = canvas.width / imgAspect
-            drawX = 0
-            drawY = (canvas.height - drawHeight) / 2
-          } else {
-            drawHeight = canvas.height
-            drawWidth = canvas.height * imgAspect
-            drawX = (canvas.width - drawWidth) / 2
-            drawY = 0
-          }
-
-          ctx.save();
-          if (mirror) {
-            ctx.translate(canvas.width, 0);
-            ctx.scale(-1, 1);
-          }
-
-          ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight)
-          ctx.restore();
-
-          applyFilter(ctx, filter, drawX, drawY, drawWidth, drawHeight)
-
-          // Cleanup Blob URL if it is one to avoid memory leaks
-          if (frame.startsWith('blob:')) {
-            URL.revokeObjectURL(frame);
-          }
+        // Resize canvas to match bitmap on first frame or resolution change
+        if (canvas.width !== bitmap.width || canvas.height !== bitmap.height) {
+          canvas.width = bitmap.width
+          canvas.height = bitmap.height
         }
 
-        // Handle Base64 vs Blob URL
-        if (frame.startsWith('blob:')) {
-          img.src = frame;
-        } else {
-          // Assume Base64
-          img.src = `data:image/jpeg;base64,${frame}`;
-        }
+        // Draw the frame
+        ctx.drawImage(bitmap, 0, 0)
       }
-    } else if (!frame && canvasRef.current) {
-      drawPlaceholder()
     }
-  }, [frame, filter, mirror])
 
-  // Initial placeholder
-  useEffect(() => {
-    if (!frame) {
-      drawPlaceholder()
-    }
+    rafRef.current = requestAnimationFrame(renderLoop)
   }, [])
 
-  const drawPlaceholder = () => {
-    const canvas = canvasRef.current
-    if (!canvas) return
+  // Handle messages from worker
+  const handleWorkerMessage = useCallback((event: MessageEvent<WorkerMessage>) => {
+    const message = event.data
 
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
+    switch (message.type) {
+      case 'frame': {
+        // Received decoded ImageBitmap from worker
+        const { bitmap, fps: workerFps } = message as WorkerFrameMessage
 
-    // Draw gradient background
-    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height)
-    gradient.addColorStop(0, '#1F2937')
-    gradient.addColorStop(1, '#111827')
-    ctx.fillStyle = gradient
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
+        // Swap bitmap (release old one)
+        const old = bitmapRef.current
+        bitmapRef.current = bitmap
+        if (old) old.close()
 
-    // Draw camera icon placeholder
-    ctx.fillStyle = '#374151'
-    ctx.font = '48px Arial'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillText('📷', canvas.width / 2, canvas.height / 2 - 40)
-
-    ctx.fillStyle = '#9CA3AF'
-    ctx.font = '24px Arial'
-    ctx.fillText('Live View', canvas.width / 2, canvas.height / 2 + 20)
-    ctx.font = '16px Arial'
-
-    if (!isConnected) {
-      ctx.fillStyle = '#EF4444'
-      ctx.fillText('WebSocket disconnected', canvas.width / 2, canvas.height / 2 + 50)
-    } else {
-      ctx.fillText('Waiting for camera stream...', canvas.width / 2, canvas.height / 2 + 50)
-    }
-  }
-
-  const applyFilter = (
-    ctx: CanvasRenderingContext2D,
-    filterType: string,
-    x: number,
-    y: number,
-    width: number,
-    height: number
-  ) => {
-    if (filterType === 'none') return
-
-    const imageData = ctx.getImageData(x, y, width, height)
-    const data = imageData.data
-
-    switch (filterType) {
-      case 'bw':
-        for (let i = 0; i < data.length; i += 4) {
-          const avg = (data[i] + data[i + 1] + data[i + 2]) / 3
-          data[i] = data[i + 1] = data[i + 2] = avg
+        // Update FPS if provided
+        if (workerFps > 0) {
+          setFps(workerFps)
         }
+
+        setIsStreaming(true)
         break
-      case 'sepia':
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i], g = data[i + 1], b = data[i + 2]
-          data[i] = Math.min(255, r * 0.393 + g * 0.769 + b * 0.189)
-          data[i + 1] = Math.min(255, r * 0.349 + g * 0.686 + b * 0.168)
-          data[i + 2] = Math.min(255, r * 0.272 + g * 0.534 + b * 0.131)
+      }
+
+      case 'connected':
+        setConnectionStatus('connected')
+        setLiveViewActive(true)
+        break
+
+      case 'disconnected':
+        setConnectionStatus('disconnected')
+        setIsStreaming(false)
+        setLiveViewActive(false)
+        // Worker will auto-reconnect
+        setTimeout(() => setConnectionStatus('connecting'), 100)
+        break
+
+      case 'error':
+        console.error('[LiveView] Worker error:', (message as WorkerStatusMessage).message)
+        break
+
+      case 'status':
+        const status = message as WorkerStatusMessage
+        if (status.connected !== undefined) {
+          setConnectionStatus(status.connected ? 'connected' : 'disconnected')
         }
-        break
-      case 'vintage':
-        for (let i = 0; i < data.length; i += 4) {
-          data[i] = Math.min(255, data[i] * 1.2)
-          data[i + 1] = Math.min(255, data[i + 1] * 1.1)
-          data[i + 2] = Math.min(255, data[i + 2] * 0.9)
-        }
-        break
-      case 'cool':
-        for (let i = 0; i < data.length; i += 4) {
-          data[i] = Math.min(255, data[i] * 0.9)
-          data[i + 2] = Math.min(255, data[i + 2] * 1.2)
-        }
-        break
-      case 'warm':
-        for (let i = 0; i < data.length; i += 4) {
-          data[i] = Math.min(255, data[i] * 1.2)
-          data[i + 2] = Math.min(255, data[i + 2] * 0.9)
+        if (status.fps !== undefined) {
+          setFps(status.fps)
         }
         break
     }
+  }, [setLiveViewActive])
 
-    ctx.putImageData(imageData, x, y)
+  // Initialize worker and start streaming
+  useEffect(() => {
+    // Create worker using Vite's worker syntax
+    const worker = new Worker(
+      new URL('../workers/liveview.worker.ts', import.meta.url),
+      { type: 'module' }
+    )
+
+    workerRef.current = worker
+
+    // Listen for messages from worker
+    worker.onmessage = handleWorkerMessage
+
+    worker.onerror = (error) => {
+      console.error('[LiveView] Worker error:', error)
+      setConnectionStatus('disconnected')
+    }
+
+    // Start connection
+    worker.postMessage({ type: 'connect' })
+
+    // Start render loop
+    rafRef.current = requestAnimationFrame(renderLoop)
+
+    // Cleanup
+    return () => {
+      // Stop render loop
+      cancelAnimationFrame(rafRef.current)
+
+      // Disconnect and terminate worker
+      if (workerRef.current) {
+        workerRef.current.postMessage({ type: 'disconnect' })
+        // Give worker time to clean up
+        setTimeout(() => {
+          workerRef.current?.terminate()
+          workerRef.current = null
+        }, 100)
+      }
+
+      // Release bitmap
+      if (bitmapRef.current) {
+        bitmapRef.current.close()
+        bitmapRef.current = null
+      }
+
+      setLiveViewActive(false)
+    }
+  }, [handleWorkerMessage, renderLoop, setLiveViewActive])
+
+  const cssFilter = CSS_FILTERS[filter] || 'none'
+
+  // Get status text and color
+  const getStatusInfo = () => {
+    switch (connectionStatus) {
+      case 'connected':
+        return { text: 'Live', color: 'bg-green-500' }
+      case 'connecting':
+        return { text: 'Connecting', color: 'bg-yellow-500' }
+      case 'disconnected':
+        return { text: 'Disconnected', color: 'bg-red-500' }
+    }
   }
+
+  const statusInfo = getStatusInfo()
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center bg-black">
+    <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden">
+      {/* Hardware-accelerated Canvas with CSS filter */}
       <canvas
         ref={canvasRef}
-        width={dimensions.width}
-        height={dimensions.height}
+        style={{
+          filter: cssFilter,
+          willChange: 'contents', // Hint for GPU compositing
+        }}
         className="max-w-full max-h-full object-contain"
       />
 
+      {/* Placeholder when not streaming */}
+      {!isStreaming && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
+          <div className="text-gray-500 text-5xl mb-4">📷</div>
+          <div className="text-gray-400 text-xl mb-2">Live View</div>
+          <div className="text-gray-500 text-sm">
+            {connectionStatus === 'connecting' ? 'Connecting to camera...' : 'Waiting for stream...'}
+          </div>
+          {connectionStatus === 'connecting' && (
+            <div className="mt-4 w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          )}
+        </div>
+      )}
+
       {/* Grid Overlay */}
-      {showGrid && (
+      {showGrid && isStreaming && (
         <div className="absolute inset-0 pointer-events-none">
-          <div className="w-full h-full grid grid-cols-3 grid-rows-3 opacity-20">
+          <div className="w-full h-full grid grid-cols-3 grid-rows-3">
             {[...Array(9)].map((_, i) => (
               <div key={i} className="border border-white/20"></div>
             ))}
           </div>
+          {/* Center crosshair */}
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+            <div className="w-8 h-0.5 bg-white/40" />
+            <div className="w-0.5 h-8 bg-white/40 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+          </div>
         </div>
       )}
 
-      {/* Connection Status */}
-      <div className="absolute top-4 left-4 flex items-center gap-2">
-        <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`} />
-        <span className="text-white/70 text-sm">
-          {isConnected ? (isActive ? 'Live' : 'Connected') : 'Disconnected'}
-        </span>
+      {/* Status Bar */}
+      <div className="absolute top-4 left-4 flex items-center gap-3">
+        <div className="flex items-center gap-2 bg-black/50 px-3 py-1.5 rounded-full backdrop-blur-sm">
+          <div className={`w-2.5 h-2.5 rounded-full ${statusInfo.color} ${connectionStatus === 'connected' ? 'animate-pulse' : ''}`} />
+          <span className="text-white/90 text-sm font-medium">
+            {statusInfo.text}
+          </span>
+          {isStreaming && fps > 0 && (
+            <>
+              <span className="text-white/30">|</span>
+              <span className="text-white/70 text-xs font-mono">{fps} FPS</span>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Grid Toggle */}
-      <button
-        onClick={() => setShowGrid(!showGrid)}
-        className="absolute top-4 right-4 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-white/70 text-sm transition-colors"
-      >
-        Grid {showGrid ? 'On' : 'Off'}
-      </button>
+      {/* Controls */}
+      <div className="absolute top-4 right-4 flex items-center gap-2">
+        {/* Grid Toggle */}
+        <button
+          onClick={() => setShowGrid(!showGrid)}
+          className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+            showGrid
+              ? 'bg-blue-500/80 text-white'
+              : 'bg-white/10 hover:bg-white/20 text-white/70'
+          }`}
+        >
+          Grid
+        </button>
+      </div>
 
-      {/* Status Message */}
-      {!isActive && isConnected && (
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
-          <span className="text-yellow-500 text-sm">Waiting for live view stream...</span>
+      {/* Performance indicator (debug) */}
+      {process.env.NODE_ENV === 'development' && isStreaming && (
+        <div className="absolute bottom-4 left-4 text-xs text-white/50 font-mono bg-black/50 px-2 py-1 rounded">
+          Worker: Active | Canvas: {canvasRef.current?.width}x{canvasRef.current?.height}
         </div>
       )}
     </div>

@@ -48,11 +48,16 @@ export interface EventConfig {
   layoutTemplate: string
   cameraSource: 'canon' | 'webcam'
   webcamIndex: number
+  cameraSettings?: string // JSON string of camera settings
   effectsConfig?: string
   propsConfig?: string
   beautyFilterConfig?: string
   watermarkConfig?: string
   postProcessConfig?: string
+  printSettings?: string
+  displaySettings?: string
+  layoutSettings?: string
+  captureSettings?: string
 }
 
 export interface AppSettings {

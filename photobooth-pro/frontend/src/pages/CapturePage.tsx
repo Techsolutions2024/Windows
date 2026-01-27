@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../store/useAppStore';
-import LiveViewCanvas from '../components/LiveViewCanvas';
+import LiveViewDisplay from '../components/LiveViewDisplay';
 import CountdownOverlay from '../components/CountdownOverlay';
 import PhotoStripTray from '../components/PhotoStripTray';
 import api, { Event } from '../services/api';
@@ -63,48 +63,14 @@ export default function CapturePage() {
       };
       fetchEvent();
     }
-
-    // Start Live View
-    const startLiveView = async () => {
-      try {
-        await api.startLiveView();
-      } catch (error) {
-        console.error("Failed to start live view", error);
-      }
-    };
-    startLiveView();
-
-    return () => {
-      api.stopLiveView();
-    };
   }, [eventId]);
 
   // Sequence Runner
   const startCaptureSequence = async () => {
     if (isSequenceRunning) return;
-
-    // Check mode
-    if (captureMode === 'gif') {
-      await runCaptureSingleMode(api.captureGif.bind(api), "Capturing GIF...", "Processing GIF...");
-      return;
-    }
-
-    if (captureMode === 'boomerang') {
-      await runCaptureSingleMode(api.captureBoomerang.bind(api), "Capturing Boomerang...", "Processing...");
-      return;
-    }
-
-    if (captureMode === 'video') {
-      // Video requires start/stop logic, implemented separately
-      await captureVideoSequence();
-      return;
-    }
-
-    // Photo Mode (Default)
     setIsSequenceRunning(true);
 
     for (let i = 0; i < totalPhotos; i++) {
-      // ... (existing photo loop)
       setCurrentPhotoIndex(i);
 
       // 1. Interval delay (except first photo, or maybe even first if configured?)
@@ -133,65 +99,6 @@ export default function CapturePage() {
     setTimeout(() => {
       navigate(`/print-result${eventId ? `?eventId=${eventId}` : ''}`);
     }, 1500);
-  };
-
-  const runCaptureSingleMode = async (apiCall: any, captureMsg: string, processMsg: string) => {
-    setIsSequenceRunning(true);
-    await runCountdown(settings.countdownDuration);
-
-    setStatusMessage(captureMsg);
-
-    try {
-      const id = eventId ? parseInt(eventId) : 0;
-      const res = await apiCall(id);
-
-      if (res.success) {
-        setStatusMessage(processMsg);
-        // Wait for processing simulation (or actual result)
-        await new Promise(r => setTimeout(r, 2000));
-        navigate(`/print-result${eventId ? `?eventId=${eventId}` : ''}`);
-      } else {
-        setStatusMessage("Capture failed: " + (res.message || "Unknown error"));
-        setTimeout(() => setStatusMessage(""), 3000);
-      }
-    } catch (err) {
-      console.error(err);
-      setStatusMessage("Error occurred");
-    }
-
-    setIsSequenceRunning(false);
-  };
-
-  const captureVideoSequence = async () => {
-    setIsSequenceRunning(true);
-    setStatusMessage("Get ready for Video!");
-    await runCountdown(settings.countdownDuration);
-
-    try {
-      const id = eventId ? parseInt(eventId) : 0;
-      setStatusMessage("Recording...");
-      await api.startVideoRecording(id);
-
-      // Record for 5 seconds (hardcoded for now)
-      let timeLeft = 5;
-      const timer = setInterval(() => {
-        timeLeft--;
-        setStatusMessage(`Recording... ${timeLeft}s`);
-        if (timeLeft <= 0) clearInterval(timer);
-      }, 1000);
-
-      await new Promise(r => setTimeout(r, 5000));
-
-      setStatusMessage("Finishing...");
-      await api.stopVideoRecording();
-
-      navigate(`/print-result${eventId ? `?eventId=${eventId}` : ''}`);
-
-    } catch (err) {
-      setStatusMessage("Video failed");
-    }
-
-    setIsSequenceRunning(false);
   };
 
   const runCountdown = (seconds: number): Promise<void> => {
@@ -225,13 +132,18 @@ export default function CapturePage() {
       // Actual API call
       const response = await api.capturePhoto(idToUse);
 
-      // If success, use the returned image URL (if backend returns it immediately)
-      // Otherwise fallback to mock for now
-      const imageUrl = response.success && response.data?.filePath
-        ? `http://localhost:8080/${response.data.filePath}` // Serve static
-        : `https://picsum.photos/400/300?random=${Date.now()}`;
+      if (response.success && response.data) {
+        // Construct full URL including backend host if needed, or rely on relative path if proxy setup
+        const imageUrl = `http://localhost:8080/${response.data.filePath}`;
 
-      setPhotos(prev => prev.map((p, idx) => idx === index ? { ...p, status: 'filled', imageUrl: imageUrl } : p));
+        setPhotos(prev => prev.map((p, idx) => idx === index ? {
+          ...p,
+          status: 'filled',
+          imageUrl: imageUrl
+        } : p));
+      } else {
+        throw new Error(response.error || "Capture failed");
+      }
 
     } catch (error) {
       console.error("Capture failed", error);
@@ -301,12 +213,7 @@ export default function CapturePage() {
 
       {/* Center - Live View */}
       <div className="flex-1 relative flex items-center justify-center bg-gray-900">
-        <LiveViewCanvas
-          width={1280}
-          height={720}
-          className="w-full h-full"
-          active={true}
-        />
+        <LiveViewDisplay filter="none" />
 
         <AnimatePresence>
           {countdownValue > 0 && <CountdownOverlay count={countdownValue} key="countdown" />}

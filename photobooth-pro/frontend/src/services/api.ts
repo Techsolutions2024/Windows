@@ -36,58 +36,23 @@ export interface EventConfig {
   beautyFilterConfig: string;
   watermarkConfig: string;
   postProcessConfig: string;
+  cameraSettings?: string; // JSON string of camera settings
   countdownSeconds: number;
   photoCount: number;
   layoutTemplate: string;
   cameraSource: 'canon' | 'webcam';
   webcamIndex: number;
-  mirrorCamera: boolean;
+  printSettings?: string;
+  displaySettings?: string;
+  layoutSettings?: string;
+  captureSettings?: string;
 }
 
 export interface Camera {
   name: string;
-  type: 'canon';
+  type: 'canon' | 'webcam';
   connected: boolean;
-  bodyID?: number;
-}
-
-// SDK Option for camera settings dropdowns
-export interface SDKOption {
-  code: number;
-  label: string;
-}
-
-// All supported SDK values from camera
-export interface CanonSupportedValues {
-  iso: SDKOption[];
-  aperture: SDKOption[];
-  shutterSpeed: SDKOption[];
-  exposureComp: SDKOption[];
-  whiteBalance: SDKOption[];
-  pictureStyle: SDKOption[];
-  afMode: SDKOption[];
-  imageQuality: SDKOption[];
-  driveMode: SDKOption[];
-  aeMode: SDKOption[];
-}
-
-// Extended Canon camera settings with SDK codes
-export interface CanonCameraSettings {
-  isoCode: number;
-  apertureCode: number;
-  shutterSpeedCode: number;
-  exposureCompCode: number;
-  meteringModeCode: number;
-  aeModeCode: number;
-  whiteBalanceCode: number;
-  pictureStyleCode: number;
-  afModeCode: number;
-  imageQualityCode: number;
-  driveModeCode: number;
-  evfOutputDevice: number;
-  evfZoom: number;
-  mirror: boolean;
-  rotation: number;
+  webcamIndex?: number;
 }
 
 export interface Photo {
@@ -270,41 +235,6 @@ class ApiService {
     return this.request<void>('/api/cameras/liveview/stop', {
       method: 'POST',
     });
-  }
-
-  // Extended SDK Camera Settings
-  async getSupportedCameraValues(): Promise<ApiResponse<CanonSupportedValues>> {
-    return this.request<CanonSupportedValues>('/api/cameras/settings/supported');
-  }
-
-  async getExtendedCameraSettings(): Promise<ApiResponse<CanonCameraSettings>> {
-    return this.request<CanonCameraSettings>('/api/cameras/settings/extended');
-  }
-
-  async updateExtendedCameraSettings(settings: Partial<CanonCameraSettings>): Promise<ApiResponse<void>> {
-    return this.request<void>('/api/cameras/settings/extended', {
-      method: 'PUT',
-      body: JSON.stringify(settings),
-    });
-  }
-
-  async setCameraPropertyByCode(propertyId: number, code: number): Promise<ApiResponse<void>> {
-    return this.request<void>('/api/cameras/property', {
-      method: 'POST',
-      body: JSON.stringify({ propertyId, code }),
-    });
-  }
-
-  // Save/Load Event Config to File
-  async saveEventConfigToFile(eventId: number, config: any): Promise<ApiResponse<{ path: string }>> {
-    return this.request<{ path: string }>(`/api/events/${eventId}/save-config`, {
-      method: 'POST',
-      body: JSON.stringify(config),
-    });
-  }
-
-  async loadEventConfigFromFile(eventId: number): Promise<ApiResponse<any>> {
-    return this.request<any>(`/api/events/${eventId}/load-config`);
   }
 
   // ==================== Capture ====================

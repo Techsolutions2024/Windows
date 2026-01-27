@@ -178,8 +178,8 @@ export default function LayoutSettings() {
                     <div
                         key={layout.id}
                         className={`relative group bg-dark-lighter rounded-xl overflow-hidden border-2 transition ${settings.layout.selectedLayoutId === layout.id
-                                ? 'border-primary'
-                                : 'border-transparent hover:border-gray-600'
+                            ? 'border-primary'
+                            : 'border-transparent hover:border-gray-600'
                             }`}
                         onClick={() => updateSettings({
                             layout: { ...settings.layout, selectedLayoutId: layout.id }

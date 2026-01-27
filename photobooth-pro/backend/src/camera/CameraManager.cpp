@@ -1,310 +1,338 @@
 #include "camera/CameraManager.h"
-#include "camera/CanonSDKCamera.h"
 #include "EDSDK.h"
 #include <algorithm>
+#include <atomic>
+#include <chrono>
 #include <iostream>
 #include <string>
+#include <thread>
+#include <vector>
+
+#ifdef _WIN32
+#include "camera/CanonCamera.h"
+#include "core/SharedMemoryManager.h"
+#endif
 
 namespace photobooth {
 
 CameraManager::CameraManager() : activeCamera_(nullptr), initialized_(false) {
-    saveDirectory_ = "data/captures";
+#ifdef _WIN32
+  sharedMemory_ = std::make_unique<SharedMemoryManager>();
+  // 20MB buffer to be safe for 24MP+ images if raw, but high quality JPEG is usually 5-10MB max.
+  // We use "Local\\CanonLiveView" as the map name.
+  sharedMemory_->initialize("Local\\CanonLiveView", 20 * 1024 * 1024);
+#endif
 }
 
-CameraManager::~CameraManager() {
-    shutdown();
-}
+CameraManager::~CameraManager() { shutdown(); }
 
 bool CameraManager::initialize() {
-    std::lock_guard<std::mutex> lock(mutex_);
+  if (initialized_)
+    return true;
 
-    if (initialized_)
-        return true;
-
-    EdsError err = EdsInitializeSDK();
-    if (err == EDS_ERR_OK) {
-        initialized_ = true;
-        std::cout << "[CameraManager] EDSDK initialized successfully." << std::endl;
-        return true;
-    } else {
-        std::cerr << "[CameraManager] Failed to initialize EDSDK. Error: " << err << std::endl;
-        return false;
-    }
+  EdsError err = EdsInitializeSDK();
+  if (err == EDS_ERR_OK) {
+    initialized_ = true;
+    std::cout << "EDSDK initialized successfully." << std::endl;
+    // Wait for SDK to detect USB-connected cameras
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    return true;
+  } else {
+    std::cerr << "Failed to initialize EDSDK. Error: " << err << std::endl;
+    return false;
+  }
 }
 
 void CameraManager::shutdown() {
-    std::lock_guard<std::mutex> lock(mutex_);
+  if (activeCamera_) {
+    activeCamera_->disconnect();
+    delete activeCamera_;
+    activeCamera_ = nullptr;
+  }
 
-    if (activeCamera_) {
-        activeCamera_->disconnect();
-        activeCamera_.reset();
-    }
+  if (initialized_) {
+    EdsTerminateSDK();
+    initialized_ = false;
+    std::cout << "EDSDK terminated." << std::endl;
+  }
+}
 
-    if (initialized_) {
-        EdsTerminateSDK();
-        initialized_ = false;
-        std::cout << "[CameraManager] EDSDK terminated." << std::endl;
-    }
+void CameraManager::detectWebcams() {
+  // Removed: Production system uses Canon EDSDK only
 }
 
 std::vector<std::string> CameraManager::detectCameras() {
-    std::lock_guard<std::mutex> lock(mutex_);
+  if (!initialized_)
+    return {};
 
-    if (!initialized_)
-        return {};
+  EdsCameraListRef cameraList = nullptr;
+  EdsUInt32 count = 0;
+  std::vector<std::string> cameras;
 
-    std::vector<std::string> cameras;
-    EdsCameraListRef cameraList = nullptr;
-    EdsUInt32 count = 0;
-
-    EdsError err = EdsGetCameraList(&cameraList);
+  // 1. Detect Canon Cameras
+  EdsError err = EdsGetCameraList(&cameraList);
+  if (err == EDS_ERR_OK) {
+    err = EdsGetChildCount(cameraList, &count);
     if (err == EDS_ERR_OK) {
-        err = EdsGetChildCount(cameraList, &count);
+      for (EdsUInt32 i = 0; i < count; i++) {
+        EdsCameraRef camRef = nullptr;
+        err = EdsGetChildAtIndex(cameraList, i, &camRef);
         if (err == EDS_ERR_OK) {
-            for (EdsUInt32 i = 0; i < count; i++) {
-                EdsCameraRef camRef = nullptr;
-                err = EdsGetChildAtIndex(cameraList, i, &camRef);
-                if (err == EDS_ERR_OK) {
-                    EdsDeviceInfo deviceInfo;
-                    err = EdsGetDeviceInfo(camRef, &deviceInfo);
-                    if (err == EDS_ERR_OK) {
-                        cameras.push_back(std::string(deviceInfo.szDeviceDescription));
-                    }
-                    EdsRelease(camRef);
-                }
-            }
+          EdsDeviceInfo deviceInfo;
+          err = EdsGetDeviceInfo(camRef, &deviceInfo);
+          if (err == EDS_ERR_OK) {
+            cameras.push_back(std::string(deviceInfo.szDeviceDescription));
+          }
+          EdsRelease(camRef);
         }
-        EdsRelease(cameraList);
+      }
     }
+    EdsRelease(cameraList);
+  }
 
-    std::cout << "[CameraManager] Detected " << cameras.size() << " Canon camera(s)." << std::endl;
-    return cameras;
-}
-
-std::vector<CameraInfo> CameraManager::getAvailableCameras() const {
-    std::vector<CameraInfo> cameras;
-
-    if (!initialized_)
-        return cameras;
-
-    EdsCameraListRef cameraList = nullptr;
-    EdsUInt32 count = 0;
-
-    EdsError err = EdsGetCameraList(&cameraList);
-    if (err == EDS_ERR_OK) {
-        err = EdsGetChildCount(cameraList, &count);
-        if (err == EDS_ERR_OK) {
-            for (EdsUInt32 i = 0; i < count; i++) {
-                EdsCameraRef camRef = nullptr;
-                err = EdsGetChildAtIndex(cameraList, i, &camRef);
-                if (err == EDS_ERR_OK) {
-                    EdsDeviceInfo deviceInfo;
-                    err = EdsGetDeviceInfo(camRef, &deviceInfo);
-                    if (err == EDS_ERR_OK) {
-                        CameraInfo info;
-                        info.name = std::string(deviceInfo.szDeviceDescription);
-                        info.type = CameraType::Canon;
-                        info.connected = (activeCamera_ && activeCamera_->getName() == info.name);
-                        info.index = static_cast<int>(i);
-                        cameras.push_back(info);
-                    }
-                    EdsRelease(camRef);
-                }
-            }
-        }
-        EdsRelease(cameraList);
-    }
-
-    return cameras;
+  return cameras;
 }
 
 bool CameraManager::selectCamera(const std::string &cameraName) {
-    std::lock_guard<std::mutex> lock(mutex_);
+  if (!initialized_)
+    return false;
 
-    if (!initialized_)
-        return false;
+  // Close existing
+  if (activeCamera_) {
+    activeCamera_->disconnect();
+    delete activeCamera_;
+    activeCamera_ = nullptr;
+  }
 
-    // Disconnect existing camera
-    if (activeCamera_) {
-        activeCamera_->stopLiveView();
-        activeCamera_->disconnect();
-        activeCamera_.reset();
-    }
+  // Canon selection logic
+  EdsCameraListRef cameraList = nullptr;
+  EdsUInt32 count = 0;
+  bool found = false;
 
-    EdsCameraListRef cameraList = nullptr;
-    EdsUInt32 count = 0;
-    bool found = false;
-
-    EdsError err = EdsGetCameraList(&cameraList);
+  EdsError err = EdsGetCameraList(&cameraList);
+  if (err == EDS_ERR_OK) {
+    err = EdsGetChildCount(cameraList, &count);
     if (err == EDS_ERR_OK) {
-        err = EdsGetChildCount(cameraList, &count);
+      for (EdsUInt32 i = 0; i < count; i++) {
+        EdsCameraRef camRef = nullptr;
+        err = EdsGetChildAtIndex(cameraList, i, &camRef);
         if (err == EDS_ERR_OK) {
-            for (EdsUInt32 i = 0; i < count; i++) {
-                EdsCameraRef camRef = nullptr;
-                err = EdsGetChildAtIndex(cameraList, i, &camRef);
-                if (err == EDS_ERR_OK) {
-                    EdsDeviceInfo deviceInfo;
-                    err = EdsGetDeviceInfo(camRef, &deviceInfo);
-                    if (err == EDS_ERR_OK) {
-                        std::string name(deviceInfo.szDeviceDescription);
+          EdsDeviceInfo deviceInfo;
+          EdsGetDeviceInfo(camRef, &deviceInfo);
 
-                        // Match by name or select first if "Auto" or empty
-                        if (cameraName.empty() || name == cameraName || cameraName == "Auto") {
-                            // Create CanonSDKCamera (bodyID not available in this SDK version)
-                            activeCamera_ = std::make_unique<CanonSDKCamera>(camRef, 0);
-                            activeCamera_->setSaveDirectory(saveDirectory_);
-
-                            if (activeCamera_->connect()) {
-                                found = true;
-                                std::cout << "[CameraManager] Connected to camera: " << name << std::endl;
-                                // Don't release camRef - camera owns it now
-                                break;
-                            } else {
-                                activeCamera_.reset();
-                                EdsRelease(camRef);
-                            }
-                        } else {
-                            EdsRelease(camRef);
-                        }
-                    } else {
-                        EdsRelease(camRef);
-                    }
-                }
+          if (cameraName.empty() || std::string(deviceInfo.szDeviceDescription) == cameraName ||
+              cameraName == "Auto") {
+            activeCamera_ = new CanonCamera(camRef);
+            if (activeCamera_->connect()) {
+              found = true;
+              break;
+            } else {
+              delete activeCamera_;
+              activeCamera_ = nullptr;
+              EdsRelease(camRef);
             }
+          } else {
+            EdsRelease(camRef);
+          }
         }
-        EdsRelease(cameraList);
+      }
     }
+    EdsRelease(cameraList);
+  }
 
-    if (!found) {
-        std::cerr << "[CameraManager] Camera not found: " << cameraName << std::endl;
-    }
-
-    return found;
+  return found;
 }
 
-ICamera* CameraManager::getActiveCamera() {
-    return activeCamera_.get();
-}
+ICamera *CameraManager::getActiveCamera() { return activeCamera_; }
 
 std::string CameraManager::getActiveCameraName() const {
-    if (activeCamera_)
-        return activeCamera_->getName();
-    return "";
+  if (activeCamera_)
+    return activeCamera_->getName();
+  return "";
+}
+
+std::vector<CameraInfo> CameraManager::getAvailableCameras() const {
+  std::vector<CameraInfo> cameras;
+
+  if (!initialized_)
+    return cameras;
+
+  // Detect Canon cameras
+  EdsCameraListRef cameraList = nullptr;
+  EdsUInt32 count = 0;
+
+  EdsError err = EdsGetCameraList(&cameraList);
+  if (err == EDS_ERR_OK) {
+    err = EdsGetChildCount(cameraList, &count);
+    if (err == EDS_ERR_OK) {
+      for (EdsUInt32 i = 0; i < count; i++) {
+        EdsCameraRef camRef = nullptr;
+        err = EdsGetChildAtIndex(cameraList, i, &camRef);
+        if (err == EDS_ERR_OK) {
+          EdsDeviceInfo deviceInfo;
+          err = EdsGetDeviceInfo(camRef, &deviceInfo);
+          if (err == EDS_ERR_OK) {
+            CameraInfo info;
+            info.name = std::string(deviceInfo.szDeviceDescription);
+            info.type = CameraType::Canon;
+            info.connected = (activeCamera_ && activeCamera_->getName() == info.name);
+            info.webcamIndex = -1;
+            cameras.push_back(info);
+          }
+          EdsRelease(camRef);
+        }
+      }
+    }
+    EdsRelease(cameraList);
+  }
+
+  return cameras;
+}
+
+bool CameraManager::selectWebcam(int deviceIndex) {
+  // Webcam support removed - Canon EDSDK only
+  std::cerr << "Webcam not supported in production build. Please use Canon camera." << std::endl;
+  return false;
 }
 
 bool CameraManager::startLiveView(LiveViewCallback callback) {
-    if (activeCamera_)
-        return activeCamera_->startLiveView(callback);
-    return false;
+  if (activeCamera_)
+    return activeCamera_->startLiveView(callback);
+  return false;
 }
 
 void CameraManager::stopLiveView() {
-    if (activeCamera_)
-        activeCamera_->stopLiveView();
+  if (activeCamera_)
+    activeCamera_->stopLiveView();
+}
+
+bool CameraManager::startMjpegStream() {
+  if (!activeCamera_) return false;
+  if (mjpegStreaming_) {
+    streamClients_++;
+    return true;
+  }
+
+  // Stop any existing live view
+  activeCamera_->stopLiveView();
+
+  // Start live view with callback that feeds the frame buffer
+  auto callback = [this](const std::vector<uint8_t> &data, int w, int h) {
+    {
+      std::lock_guard<std::mutex> lock(frameMutex_);
+      latestFrame_ = data;
+      frameSeq_++;
+      
+      // IPC: Write to Shared Memory for Electron
+#ifdef _WIN32
+      if (sharedMemory_) {
+          sharedMemory_->writeFrame(data, w, h);
+      }
+#endif
+    }
+    frameCV_.notify_all();
+  };
+
+  if (activeCamera_->startLiveView(callback)) {
+    mjpegStreaming_ = true;
+    streamClients_++;
+    std::cout << "MJPEG stream started" << std::endl;
+    return true;
+  }
+  return false;
+}
+
+void CameraManager::stopMjpegStream() {
+  int clients = --streamClients_;
+  if (clients <= 0) {
+    streamClients_ = 0;
+    mjpegStreaming_ = false;
+    stopLiveView();
+    // Wake any waiting readers
+    frameCV_.notify_all();
+    std::cout << "MJPEG stream stopped" << std::endl;
+  }
+}
+
+bool CameraManager::isMjpegStreaming() const {
+  return mjpegStreaming_;
+}
+
+bool CameraManager::waitForFrame(std::vector<uint8_t> &frame, int timeoutMs) {
+  std::unique_lock<std::mutex> lock(frameMutex_);
+  uint64_t currentSeq = frameSeq_;
+  if (frameCV_.wait_for(lock, std::chrono::milliseconds(timeoutMs),
+                        [this, currentSeq] { return frameSeq_ > currentSeq || !mjpegStreaming_; })) {
+    if (!mjpegStreaming_) return false;
+    frame = latestFrame_;
+    return !frame.empty();
+  }
+  return false; // timeout
 }
 
 void CameraManager::capture(CaptureMode mode, CaptureCallback callback) {
-    if (activeCamera_) {
-        activeCamera_->capture(mode, callback);
-    } else {
-        if (callback) {
-            CaptureResult res;
-            res.success = false;
-            res.errorMessage = "No active camera";
-            callback(res);
-        }
+  if (activeCamera_) {
+    activeCamera_->capture(mode, callback);
+  } else {
+    if (callback) {
+      CaptureResult res;
+      res.success = false;
+      res.errorMessage = "No active camera";
+      callback(res);
     }
+  }
 }
 
 void CameraManager::captureWithCountdown(int seconds, CaptureMode mode,
                                          CaptureCallback callback) {
-    if (activeCamera_) {
-        activeCamera_->captureWithCountdown(seconds, mode, callback);
-    } else {
-        if (callback) {
-            CaptureResult res;
-            res.success = false;
-            res.errorMessage = "No active camera";
-            callback(res);
-        }
+  if (activeCamera_) {
+    activeCamera_->captureWithCountdown(seconds, mode, callback);
+  } else {
+    if (callback) {
+      CaptureResult res;
+      res.success = false;
+      res.errorMessage = "No active camera";
+      callback(res);
     }
+  }
 }
 
 bool CameraManager::setSettings(const CameraSettings &settings) {
-    if (activeCamera_)
-        return activeCamera_->setSettings(settings);
-    return false;
+  if (activeCamera_)
+    return activeCamera_->setSettings(settings);
+  return false;
 }
 
 CameraSettings CameraManager::getSettings() const {
-    if (activeCamera_)
-        return activeCamera_->getSettings();
-    return CameraSettings();
+  if (activeCamera_)
+    return activeCamera_->getSettings();
+  return CameraSettings();
 }
 
+void CameraManager::detectCanonCameras() {}
+
 std::vector<int> CameraManager::getSupportedISO() const {
-    if (activeCamera_)
-        return activeCamera_->getSupportedISO();
-    return {};
+  if (activeCamera_)
+    return activeCamera_->getSupportedISO();
+  return {};
 }
 
 std::vector<std::string> CameraManager::getSupportedApertures() const {
-    if (activeCamera_)
-        return activeCamera_->getSupportedApertures();
-    return {};
+  if (activeCamera_)
+    return activeCamera_->getSupportedApertures();
+  return {};
 }
 
 std::vector<std::string> CameraManager::getSupportedShutterSpeeds() const {
-    if (activeCamera_)
-        return activeCamera_->getSupportedShutterSpeeds();
-    return {};
+  if (activeCamera_)
+    return activeCamera_->getSupportedShutterSpeeds();
+  return {};
 }
 
 std::vector<std::string> CameraManager::getSupportedWhiteBalances() const {
-    if (activeCamera_)
-        return activeCamera_->getSupportedWhiteBalances();
-    return {};
-}
-
-// Extended SDK methods
-
-CanonSupportedValues CameraManager::getAllSupportedCameraValues() {
-    if (activeCamera_)
-        return activeCamera_->getAllSupportedValues();
-    return CanonSupportedValues();
-}
-
-CanonCameraSettings CameraManager::getExtendedCameraSettings() const {
-    if (activeCamera_)
-        return activeCamera_->getExtendedSettings();
-    return CanonCameraSettings();
-}
-
-bool CameraManager::setExtendedCameraSettings(const CanonCameraSettings& settings) {
-    if (activeCamera_)
-        return activeCamera_->setExtendedSettings(settings);
-    return false;
-}
-
-bool CameraManager::setCameraPropertyByCode(EdsPropertyID propertyID, EdsUInt32 code) {
-    if (activeCamera_)
-        return activeCamera_->setPropertyByCode(propertyID, code);
-    return false;
-}
-
-CanonSDKCamera* CameraManager::getCanonCamera() {
-    return activeCamera_.get();
-}
-
-void CameraManager::setSaveDirectory(const std::string& dir) {
-    saveDirectory_ = dir;
-    if (activeCamera_) {
-        activeCamera_->setSaveDirectory(dir);
-    }
-}
-
-void CameraManager::detectCanonCameras() {
-    // Already implemented in detectCameras()
+  if (activeCamera_)
+    return activeCamera_->getSupportedWhiteBalances();
+  return {};
 }
 
 } // namespace photobooth

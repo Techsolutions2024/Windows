@@ -1,0 +1,9 @@
+@echo off
+title Photobooth Backend Watchdog
+echo [INFO] Starting Photobooth Server in LOOP mode...
+:loop
+echo [INFO] Launching server at %time%...
+photobooth-server.exe
+echo [WARNING] Server crashed or closed! Restarting in 2 seconds...
+timeout /t 2 /nobreak >nul
+goto loop

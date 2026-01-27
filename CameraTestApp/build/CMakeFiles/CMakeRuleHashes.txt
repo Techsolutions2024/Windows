@@ -1,0 +1,4 @@
+# Hashes of file build rules.
+a878be1e0b8607c98882bb8314d05261 CMakeFiles/CameraTestApp_autogen
+3a34fa4395d319d01aa852a2b9b5013d CameraTestApp_autogen/CCBC4FUR7J/qrc_qml.cpp
+432f7afa78f63c82e92c45075cc29362 CameraTestApp_autogen/timestamp

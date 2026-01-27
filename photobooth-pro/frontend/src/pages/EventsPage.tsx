@@ -1,18 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import api, { Event } from '../services/api';
+import { motion } from 'framer-motion';
+import api, { Event as ApiEvent } from '../services/api';
 import EventModal from '../components/CreateEventModal'; // We renamed the component content, but filename is still CreateEventModal for now.
 
 // Extend ApiEvent to include UI-specific state
-// interface Event extends ApiEvent {
-//   selected?: boolean;
-// }
-
-interface EventCardProps {
-  event: Event;
-  isSelected: boolean;
-  onClick: () => void;
+interface Event extends ApiEvent {
+  selected?: boolean;
 }
 
 export default function EventsPage() {
@@ -169,7 +163,7 @@ export default function EventsPage() {
   const handleLaunchEvent = () => {
     const selectedEvent = events.find((e) => e.selected);
     if (selectedEvent) {
-      navigate(`/attract?eventId=${selectedEvent.id}`);
+      navigate(`/mode-selection?eventId=${selectedEvent.id}`);
     }
   };
 
@@ -355,8 +349,16 @@ export default function EventsPage() {
                   </div>
 
                   {/* Thumbnail */}
-                  <div className="aspect-video bg-white/10 mb-2 rounded-lg overflow-hidden flex items-center justify-center">
-                    {event.thumbnailPath ? (
+                  <div className="aspect-video bg-white/10 mb-2 rounded-lg overflow-hidden flex items-center justify-center relative">
+                    {/* Background Pattern/Grid if no image */}
+                    <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent" />
+
+                    {event.config?.layoutTemplate ? (
+                      <div
+                        className="w-full h-full bg-contain bg-center bg-no-repeat transition-transform group-hover:scale-105"
+                        style={{ backgroundImage: `url(${event.config.layoutTemplate})` }}
+                      />
+                    ) : event.thumbnailPath ? (
                       <div
                         className="w-full h-full bg-cover bg-center transition-transform group-hover:scale-105"
                         style={{ backgroundImage: `url(${event.thumbnailPath})` }}
